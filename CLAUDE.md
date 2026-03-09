@@ -25,11 +25,13 @@ Morfeo/
     HierarchyNode.swift        — tree hierarchy types
     QueryResult.swift          — query result types
     DbError.swift              — error types
+    README.md                  — contributor guide for adding backends
     Postgres/                  — everything Postgres-specific
-      PostgresBackend.swift
-      (future: highlights, formatters, etc.)
-    MySQL/                     — everything MySQL-specific (future)
-      MySQLBackend.swift
+      PostgresBackend.swift    — class definition, connection pool
+      PostgresHierarchy.swift  — tree navigation, node details
+      PostgresDataOps.swift    — data fetching, query execution
+      PostgresSQLGen.swift     — SQL generation
+      PostgresDecoders.swift   — binary wire format decoders
   Views/                       — all SwiftUI views
   State/                       — @Observable state classes
   Store/                       — JSON persistence

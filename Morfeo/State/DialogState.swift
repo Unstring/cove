@@ -5,7 +5,7 @@ final class DialogState {
     var name = ""
     var backend: BackendType = .postgres
     var host = "localhost"
-    var port = "5432"
+    var port = BackendType.postgres.defaultPort
     var user = ""
     var password = ""
     var database = ""
@@ -21,7 +21,7 @@ final class DialogState {
         name = ""
         backend = .postgres
         host = "localhost"
-        port = "5432"
+        port = backend.defaultPort
         user = ""
         password = ""
         database = ""

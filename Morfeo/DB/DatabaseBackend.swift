@@ -6,6 +6,10 @@ protocol DatabaseBackend: Sendable {
 
     func listChildren(path: [String]) async throws -> [HierarchyNode]
 
+    func isDataBrowsable(path: [String]) -> Bool
+    func isEditable(path: [String]) -> Bool
+    func isStructureEditable(path: [String]) -> Bool
+
     func fetchTableData(
         path: [String],
         limit: UInt32,

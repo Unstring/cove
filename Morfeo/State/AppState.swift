@@ -229,17 +229,13 @@ final class AppState {
         updateBreadcrumb()
         tree.rebuildFlat()
 
-        if path.count == 4, isDataGroup(path[2]) {
+        if connection?.isDataBrowsable(path: path) == true {
             Task { await loadTableData(path: path, offset: 0) }
         } else if path.count >= 3 {
             Task { await loadNodeDetails(path: path) }
         }
 
         saveSession()
-    }
-
-    private func isDataGroup(_ group: String) -> Bool {
-        ["Tables", "Views", "Materialized Views"].contains(group)
     }
 
     func loadChildren(path: [String]) async {
@@ -264,7 +260,7 @@ final class AppState {
         if contentMode == .query {
             saveCurrentQuery()
             if let path = tree.selected {
-                if path.count == 4, isDataGroup(path[2]) {
+                if connection?.isDataBrowsable(path: path) == true {
                     Task { await loadTableData(path: path, offset: 0) }
                 } else if path.count >= 3 {
                     Task { await loadNodeDetails(path: path) }
@@ -323,22 +319,18 @@ final class AppState {
 
     var isDataGroupTable: Bool {
         guard let table else { return false }
-        return table.tablePath.count == 4 && isDataGroup(table.tablePath[2])
+        return connection?.isDataBrowsable(path: table.tablePath) == true
     }
 
     var isEditableTable: Bool {
         guard let table else { return false }
-        return table.tablePath.count == 4
-            && table.tablePath[2] == "Tables"
+        return connection?.isEditable(path: table.tablePath) == true
             && table.columns.contains(where: \.isPrimaryKey)
     }
 
     var isEditableStructure: Bool {
         guard let table else { return false }
-        let p = table.tablePath
-        return p.count >= 5
-            && p[2] == "Tables"
-            && ["Indexes", "Constraints", "Triggers"].contains(p[4])
+        return connection?.isStructureEditable(path: table.tablePath) == true
     }
 
     func tableTabChanged(_ tab: TableTab) {
@@ -391,7 +383,7 @@ final class AppState {
     }
 
     func tableSortClicked(_ colIdx: Int) {
-        guard let table, table.tablePath.count == 4, isDataGroup(table.tablePath[2]) else { return }
+        guard let table, connection?.isDataBrowsable(path: table.tablePath) == true else { return }
         guard let colName = table.columns[safe: colIdx]?.name else { return }
 
         if table.sortColumn == colName {
@@ -533,7 +525,7 @@ final class AppState {
     }
 
     func tableNextPage() {
-        guard let table, table.tablePath.count == 4, isDataGroup(table.tablePath[2]) else { return }
+        guard let table, connection?.isDataBrowsable(path: table.tablePath) == true else { return }
         let newOffset = table.offset + table.pageSize
         table.offset = newOffset
         let path = table.tablePath
@@ -541,7 +533,7 @@ final class AppState {
     }
 
     func tablePrevPage() {
-        guard let table, table.tablePath.count == 4, isDataGroup(table.tablePath[2]) else { return }
+        guard let table, connection?.isDataBrowsable(path: table.tablePath) == true else { return }
         let newOffset = table.offset > table.pageSize ? table.offset - table.pageSize : 0
         table.offset = newOffset
         let path = table.tablePath
@@ -549,7 +541,7 @@ final class AppState {
     }
 
     func tablePageSize(_ size: UInt32) {
-        guard let table, table.tablePath.count == 4, isDataGroup(table.tablePath[2]) else { return }
+        guard let table, connection?.isDataBrowsable(path: table.tablePath) == true else { return }
         table.pageSize = size
         table.offset = 0
         let path = table.tablePath
@@ -561,7 +553,7 @@ final class AppState {
     func refresh() {
         guard let table else { return }
         let path = table.tablePath
-        if path.count == 4, isDataGroup(path[2]) {
+        if connection?.isDataBrowsable(path: path) == true {
             if tableTab == .structure {
                 structureTable = nil
                 loadTableStructure()
@@ -836,7 +828,7 @@ final class AppState {
             tree.rebuildFlat()
             updateBreadcrumb()
 
-            if targetPath.count == 4, isDataGroup(targetPath[2]) {
+            if connection?.isDataBrowsable(path: targetPath) == true {
                 await loadTableData(path: targetPath, offset: 0)
             } else if targetPath.count >= 3 {
                 await loadNodeDetails(path: targetPath)
