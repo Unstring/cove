@@ -5,7 +5,7 @@ struct ConnectionDialog: View {
     @State private var name = ""
     @State private var backend: BackendType = .postgres
     @State private var host = "localhost"
-    @State private var port = "5432"
+    @State private var port = BackendType.postgres.defaultPort
     @State private var user = ""
     @State private var password = ""
     @State private var database = ""
@@ -148,6 +148,9 @@ struct ConnectionDialog: View {
         }
         .onDisappear {
             NSColorPanel.shared.close()
+        }
+        .onChange(of: backend) { _, newBackend in
+            port = newBackend.defaultPort
         }
         .onChange(of: dialog.testResult?.message) {
             guard let result = dialog.testResult else { return }
