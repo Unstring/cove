@@ -4,7 +4,6 @@ import AppKit
 enum ContentMode {
     case empty
     case table
-    case query
 }
 
 enum TableTab {
@@ -24,8 +23,7 @@ final class AppState {
     var showSidebar = true
     var sidebarWidth: CGFloat = 220
     var showInspector = false
-    var showBottomPanel = false
-    var queryTable: TableState?
+    var showQueryEditor = false
     var contentMode: ContentMode = .empty
     var tableTab: TableTab = .data
     var structureTable: TableState?
@@ -38,6 +36,7 @@ final class AppState {
     var showSQLPreview = false
     var connecting = false
     var query = QueryState()
+    var completionSchema: CompletionSchema?
     var savedQueries: [String: String]
     var showCreateSheet = false
     var createSheetLabel = ""
@@ -123,6 +122,11 @@ final class AppState {
                 ConnectionStoreIO.save(ConnectionStore(connections: self.savedConnections))
                 self.updateBreadcrumb()
                 await self.loadChildren(path: [])
+                if self.showQueryEditor {
+                    self.queryDatabase = ""
+                    self.loadCurrentQuery()
+                    self.loadCompletionSchema()
+                }
                 self.saveSession()
             } catch {
                 self.dialog.error = error.localizedDescription
@@ -272,6 +276,11 @@ final class AppState {
             self.errorText = ""
             self.updateBreadcrumb()
             await self.loadChildren(path: [])
+            if showQueryEditor {
+                queryDatabase = ""
+                loadCurrentQuery()
+                loadCompletionSchema()
+            }
         } catch {
             self.errorText = error.localizedDescription
         }
@@ -316,6 +325,16 @@ final class AppState {
         tree.selected = path
         updateBreadcrumb()
         tree.rebuildFlat()
+
+        if showQueryEditor {
+            let newDB = path.first ?? ""
+            if newDB != queryDatabase {
+                saveCurrentQuery()
+                queryDatabase = newDB
+                loadCurrentQuery()
+                loadCompletionSchema()
+            }
+        }
 
         if connection?.isDataBrowsable(path: path) == true {
             Task { await loadTableData(path: path, offset: 0) }
@@ -398,30 +417,48 @@ final class AppState {
     // MARK: - Query Toggle
 
     func toggleQuery() {
-        if contentMode == .query {
+        if showQueryEditor {
+            showQueryEditor = false
             saveCurrentQuery()
+            query.status = ""
             if let path = tree.selected {
                 if connection?.isDataBrowsable(path: path) == true {
                     Task { await loadTableData(path: path, offset: 0) }
                 } else if path.count >= 3 {
                     Task { await loadNodeDetails(path: path) }
                 } else {
+                    table = nil
                     contentMode = .empty
                 }
             } else {
+                table = nil
                 contentMode = .empty
             }
         } else {
+            showQueryEditor = true
             queryDatabase = tree.selected?.first ?? ""
             loadCurrentQuery()
-            contentMode = .query
+            loadCompletionSchema()
+        }
+        saveSession()
+    }
+
+    func loadCompletionSchema() {
+        guard let conn = connection else { return }
+        let db = queryDatabase
+        Task {
+            do {
+                self.completionSchema = try await conn.fetchCompletionSchema(database: db)
+            } catch {
+                self.completionSchema = nil
+            }
         }
     }
 
     func saveCurrentQuery() {
         guard let idx = activeConnectionIdx,
               let conn = savedConnections[safe: idx] else { return }
-        let key = conn.id.uuidString
+        let key = "\(conn.id.uuidString):\(queryDatabase)"
         if query.text.isEmpty {
             savedQueries.removeValue(forKey: key)
         } else {
@@ -433,7 +470,7 @@ final class AppState {
     private func loadCurrentQuery() {
         guard let idx = activeConnectionIdx,
               let conn = savedConnections[safe: idx] else { return }
-        query.text = savedQueries[conn.id.uuidString] ?? ""
+        query.text = savedQueries["\(conn.id.uuidString):\(queryDatabase)"] ?? ""
         query.selectedRange = NSRange(location: 0, length: 0)
         query.error = ""
         query.status = ""
@@ -845,19 +882,17 @@ final class AppState {
                     let n = data.rowsAffected ?? 0
                     query.status = "\(n) rows affected"
                     query.result = nil
-                    queryTable = nil
                 } else {
                     let rowCount = data.rows.count
                     query.status = rowCount > 10_000 ? "Showing 10,000 of \(rowCount) rows" : "\(rowCount) rows"
                     query.result = data
-                    queryTable = TableState(tablePath: [], result: data)
-                    showBottomPanel = true
+                    table = TableState(tablePath: [], result: data)
+                    contentMode = .table
                 }
             } catch {
                 query.executing = false
                 query.error = error.localizedDescription
                 query.result = nil
-                queryTable = nil
             }
         }
     }
@@ -911,7 +946,8 @@ final class AppState {
             expandedPaths: tree.expanded.isEmpty ? nil : tree.expanded,
             showInspector: showInspector,
             showSidebar: showSidebar,
-            sidebarWidth: sidebarWidth
+            sidebarWidth: sidebarWidth,
+            showQueryEditor: showQueryEditor
         )
         SessionStoreIO.save(session)
     }
@@ -980,6 +1016,13 @@ final class AppState {
             } else if targetPath.count >= 3 {
                 await loadNodeDetails(path: targetPath)
             }
+        }
+
+        if session.showQueryEditor == true {
+            showQueryEditor = true
+            queryDatabase = tree.selected?.first ?? ""
+            loadCurrentQuery()
+            loadCompletionSchema()
         }
     }
 

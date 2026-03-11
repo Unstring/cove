@@ -127,6 +127,51 @@ extension ScyllaBackend {
         return QueryResult(columns: columnInfos, rows: allRows, rowsAffected: nil, totalCount: nil)
     }
 
+    func fetchCompletionSchema(database: String) async throws -> CompletionSchema {
+        let ksRows = try await client.query("SELECT keyspace_name FROM system_schema.keyspaces")
+        var schemas: [String] = []
+        let systemKS = Self.systemKeyspaces
+        for row in ksRows {
+            guard let name = row.column("keyspace_name")?.string,
+                  !systemKS.contains(name) else { continue }
+            schemas.append(name)
+        }
+        schemas.sort()
+        let schemaSet = Set(schemas)
+
+        let colRows = try await client.query(
+            "SELECT keyspace_name, table_name, column_name, type FROM system_schema.columns"
+        )
+        var tableMap: [String: [String: [CompletionColumn]]] = [:]
+        for row in colRows {
+            guard let ks = row.column("keyspace_name")?.string,
+                  schemaSet.contains(ks),
+                  let tableName = row.column("table_name")?.string,
+                  let colName = row.column("column_name")?.string,
+                  let colType = row.column("type")?.string else { continue }
+            tableMap[ks, default: [:]][tableName, default: []].append(
+                CompletionColumn(name: colName, typeName: colType)
+            )
+        }
+
+        var tables: [String: [CompletionTable]] = [:]
+        for (ks, tblMap) in tableMap {
+            tables[ks] = tblMap.map { CompletionTable(name: $0.key, columns: $0.value.sorted { $0.name < $1.name }) }
+                .sorted { $0.name < $1.name }
+        }
+
+        let funcRows = try await client.query("SELECT function_name FROM system_schema.functions")
+        var functions = Set<String>()
+        for row in funcRows {
+            if let name = row.column("function_name")?.string { functions.insert(name) }
+        }
+
+        return CompletionSchema(
+            schemas: schemas, tables: tables,
+            functions: functions.sorted(), types: []
+        )
+    }
+
     func fetchColumnInfo(keyspace: String, table: String) async throws -> [ColumnInfo] {
         let rows = try await client.query(
             "SELECT column_name, type, kind, position FROM system_schema.columns WHERE keyspace_name = '\(keyspace)' AND table_name = '\(table)'"

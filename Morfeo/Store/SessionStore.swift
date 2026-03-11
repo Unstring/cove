@@ -7,6 +7,7 @@ struct SessionState: Codable {
     var showInspector: Bool
     var showSidebar: Bool
     var sidebarWidth: CGFloat?
+    var showQueryEditor: Bool?
 }
 
 enum SessionStoreIO {

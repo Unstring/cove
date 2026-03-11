@@ -118,6 +118,72 @@ extension PostgresBackend {
         return QueryResult(columns: columnInfos, rows: allRows, rowsAffected: nil, totalCount: nil)
     }
 
+    func fetchCompletionSchema(database: String) async throws -> CompletionSchema {
+        let client = try await clientFor(database: database)
+
+        let schemaSQL = """
+            SELECT schema_name FROM information_schema.schemata \
+            WHERE schema_name NOT IN ('pg_toast', 'pg_catalog', 'information_schema') \
+            ORDER BY schema_name
+            """
+        let schemaRows = try await client.query(PostgresQuery(stringLiteral: schemaSQL))
+        var schemas: [String] = []
+        for try await row in schemaRows {
+            schemas.append(try row.decode(String.self, context: .default))
+        }
+
+        let colSQL = """
+            SELECT table_schema, table_name, column_name, data_type \
+            FROM information_schema.columns \
+            WHERE table_schema NOT IN ('pg_toast', 'pg_catalog', 'information_schema') \
+            ORDER BY table_schema, table_name, ordinal_position
+            """
+        let colRows = try await client.query(PostgresQuery(stringLiteral: colSQL))
+        var tableMap: [String: [String: [CompletionColumn]]] = [:]
+        for try await row in colRows {
+            let (schema, tableName, colName, dataType) = try row.decode(
+                (String, String, String, String).self, context: .default
+            )
+            tableMap[schema, default: [:]][tableName, default: []].append(
+                CompletionColumn(name: colName, typeName: dataType)
+            )
+        }
+
+        var tables: [String: [CompletionTable]] = [:]
+        for (schema, tblMap) in tableMap {
+            tables[schema] = tblMap.map { CompletionTable(name: $0.key, columns: $0.value) }
+                .sorted { $0.name < $1.name }
+        }
+
+        let funcSQL = """
+            SELECT DISTINCT p.proname FROM pg_proc p \
+            JOIN pg_namespace n ON p.pronamespace = n.oid \
+            WHERE n.nspname NOT IN ('pg_catalog', 'information_schema') \
+            AND p.prokind IN ('f', 'p') \
+            ORDER BY p.proname
+            """
+        let funcRows = try await client.query(PostgresQuery(stringLiteral: funcSQL))
+        var functions: [String] = []
+        for try await row in funcRows {
+            functions.append(try row.decode(String.self, context: .default))
+        }
+
+        let typeSQL = """
+            SELECT DISTINCT t.typname FROM pg_type t \
+            JOIN pg_namespace n ON t.typnamespace = n.oid \
+            WHERE n.nspname NOT IN ('pg_catalog', 'information_schema') \
+            AND t.typtype IN ('e', 'c', 'd') \
+            ORDER BY t.typname
+            """
+        let typeRows = try await client.query(PostgresQuery(stringLiteral: typeSQL))
+        var types: [String] = []
+        for try await row in typeRows {
+            types.append(try row.decode(String.self, context: .default))
+        }
+
+        return CompletionSchema(schemas: schemas, tables: tables, functions: functions, types: types)
+    }
+
     func fetchColumnInfo(
         client: PostgresClient,
         schema: String,

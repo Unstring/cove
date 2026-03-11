@@ -25,19 +25,25 @@ struct ContentView: View {
                             .frame(minWidth: 184, idealWidth: 264, maxWidth: 604)
                     }
 
-                    contentArea
-                        .background {
-                            VisualEffectBackground(material: .underWindowBackground)
-                        }
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 10)
-                                .strokeBorder(.quaternary, lineWidth: 1)
-                        )
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .layoutPriority(1)
+                    if state.showQueryEditor {
+                        contentArea
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .layoutPriority(1)
+                    } else {
+                        contentArea
+                            .background {
+                                VisualEffectBackground(material: .underWindowBackground)
+                            }
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .strokeBorder(.quaternary, lineWidth: 1)
+                            )
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .layoutPriority(1)
+                    }
 
-                    if state.showInspector, let table = state.table,
+                    if state.showInspector, !state.showQueryEditor, let table = state.table,
                        state.contentMode == .table, table.selectedRow != nil {
                         RowInspectorView(table: table)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
@@ -92,7 +98,7 @@ struct ContentView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
-        let hasTable = state.table != nil && state.contentMode == .table
+        let hasTable = state.table != nil && state.contentMode == .table && !state.showQueryEditor
         let hasPending = state.table?.hasPendingEdits ?? false
         let canInspect = hasTable && state.table?.selectedRow != nil
 
@@ -123,7 +129,7 @@ struct ContentView: View {
         ToolbarItem(placement: .primaryAction) {
             if state.connection != nil {
                 Button { state.toggleQuery() } label: {
-                    Text("SQL")
+                    Text("Query")
                         .font(.system(size: 12, weight: .medium))
                 }
             }
@@ -133,11 +139,6 @@ struct ContentView: View {
             Button { state.showSidebar.toggle() } label: {
                 Image(systemName: "sidebar.leading")
             }
-
-            Button { state.showBottomPanel.toggle() } label: {
-                Image(systemName: "rectangle.split.1x2")
-            }
-            .disabled(state.contentMode != .query || state.queryTable == nil)
 
             Button { state.showInspector.toggle() } label: {
                 Image(systemName: "sidebar.trailing")
@@ -150,6 +151,34 @@ struct ContentView: View {
 
     @ViewBuilder
     private var contentArea: some View {
+        if state.showQueryEditor {
+            VSplitView {
+                QueryEditorView()
+                    .background { VisualEffectBackground(material: .underWindowBackground) }
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.quaternary, lineWidth: 1))
+                    .padding(.bottom, 4)
+                    .frame(minHeight: 120)
+
+                VStack(spacing: 0) {
+                    tableOrEmpty
+                    if !state.query.status.isEmpty {
+                        queryStatusBar
+                    }
+                }
+                .background { VisualEffectBackground(material: .underWindowBackground) }
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .overlay(RoundedRectangle(cornerRadius: 10).strokeBorder(.quaternary, lineWidth: 1))
+                .frame(minHeight: 80)
+            }
+            .hideSplitDividers()
+        } else {
+            tableOrEmpty
+        }
+    }
+
+    @ViewBuilder
+    private var tableOrEmpty: some View {
         switch state.contentMode {
         case .empty:
             Text("Select a table or open a query")
@@ -168,34 +197,18 @@ struct ContentView: View {
                                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                         }
                     } else {
-                        DataTableView(table: table, isQueryResult: false)
+                        DataTableView(table: table, isQueryResult: table.tablePath.isEmpty)
                     }
 
-                    if state.hasStructureTab, state.tableTab == .structure {
+                    if !state.showQueryEditor, state.hasStructureTab, state.tableTab == .structure {
                         structureFooter
                     }
                 }
             }
-
-        case .query:
-            if state.showBottomPanel, let queryTable = state.queryTable {
-                VSplitView {
-                    QueryEditorView()
-                        .frame(minHeight: 120)
-
-                    VStack(spacing: 0) {
-                        DataTableView(table: queryTable, isQueryResult: true)
-                        queryResultFooter
-                    }
-                    .frame(minHeight: 80)
-                }
-            } else {
-                QueryEditorView()
-            }
         }
     }
 
-    private var queryResultFooter: some View {
+    private var queryStatusBar: some View {
         HStack {
             Text(state.query.status)
                 .font(.system(size: 11))

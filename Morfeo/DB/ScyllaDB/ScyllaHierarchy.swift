@@ -19,7 +19,7 @@ extension ScyllaBackend {
     private static let tintKey      = NodeTint(r: 0.835, g: 0.718, b: 0.392)
     private static let tintAggregate = NodeTint(r: 0.529, g: 0.753, b: 0.518)
 
-    private static let systemKeyspaces: Set<String> = [
+    static let systemKeyspaces: Set<String> = [
         "system", "system_schema", "system_traces", "system_auth",
         "system_distributed", "system_distributed_everywhere",
         "system_virtual_schema",

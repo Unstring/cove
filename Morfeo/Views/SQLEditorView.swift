@@ -6,6 +6,7 @@ struct SQLEditorView: NSViewRepresentable {
     @Binding var selectedRange: NSRange
     var runnableRange: NSRange
     var keywords: Set<String> = []
+    var completionSchema: CompletionSchema?
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -70,6 +71,7 @@ struct SQLEditorView: NSViewRepresentable {
             textView.selectedRanges = selectedRanges
         }
         context.coordinator.updateBar(range: runnableRange)
+        context.coordinator.completionSchema = completionSchema
     }
 
     private func highlightText(_ textView: NSTextView) {
@@ -89,9 +91,17 @@ struct SQLEditorView: NSViewRepresentable {
         let parent: SQLEditorView
         weak var textView: NSTextView?
         var barView: NSView?
+        var completionSchema: CompletionSchema?
+        private let popup = CompletionPopup()
+        private var completionWork: DispatchWorkItem?
+        private var wordRange = NSRange(location: 0, length: 0)
 
         init(_ parent: SQLEditorView) {
             self.parent = parent
+            super.init()
+            popup.onAccept = { [weak self] item in
+                self?.insertCompletion(item)
+            }
         }
 
         func textDidChange(_ notification: Notification) {
@@ -99,12 +109,132 @@ struct SQLEditorView: NSViewRepresentable {
             parent.text = textView.string
             parent.selectedRange = textView.selectedRange()
             parent.highlightText(textView)
+            scheduleCompletion()
         }
 
         func textViewDidChangeSelection(_ notification: Notification) {
             guard let textView = notification.object as? NSTextView else { return }
             parent.selectedRange = textView.selectedRange()
         }
+
+        func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+            if popup.isVisible {
+                switch commandSelector {
+                case #selector(NSResponder.moveUp(_:)):
+                    return popup.moveUp()
+                case #selector(NSResponder.moveDown(_:)):
+                    return popup.moveDown()
+                case #selector(NSResponder.insertTab(_:)),
+                     #selector(NSResponder.insertNewline(_:)):
+                    if let item = popup.selectedItem {
+                        insertCompletion(item)
+                        return true
+                    }
+                    return false
+                case #selector(NSResponder.cancelOperation(_:)):
+                    popup.hide()
+                    return true
+                default:
+                    break
+                }
+            }
+
+            // Manual trigger via Escape when popup not visible
+            if commandSelector == #selector(NSResponder.complete(_:)) {
+                completionWork?.cancel()
+                updateCompletions()
+                return true
+            }
+
+            return false
+        }
+
+        // MARK: - Completion logic
+
+        private func scheduleCompletion() {
+            completionWork?.cancel()
+            let work = DispatchWorkItem { [weak self] in
+                self?.updateCompletions()
+            }
+            completionWork = work
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1, execute: work)
+        }
+
+        private func updateCompletions() {
+            guard let textView, let schema = completionSchema else {
+                popup.hide()
+                return
+            }
+
+            let cursor = textView.selectedRange().location
+            let text = textView.string
+            let items = CompletionEngine.complete(
+                text: text,
+                cursor: cursor,
+                schema: schema,
+                keywords: parent.keywords
+            )
+
+            guard !items.isEmpty else {
+                popup.hide()
+                return
+            }
+
+            // Compute word range for replacement
+            let chars = Array(text.utf16)
+            var ws = cursor
+            while ws > 0 && CompletionEngine.isIdent(chars[ws - 1]) { ws -= 1 }
+            wordRange = NSRange(location: ws, length: cursor - ws)
+
+            // Position popup at cursor
+            guard let layoutManager = textView.layoutManager,
+                  let textContainer = textView.textContainer else {
+                popup.hide()
+                return
+            }
+
+            let glyphCount = layoutManager.numberOfGlyphs
+            let glyphIndex = glyphCount > 0
+                ? layoutManager.glyphIndexForCharacter(at: min(cursor, text.utf16.count - 1))
+                : 0
+            let safeGlyph = min(glyphIndex, max(glyphCount - 1, 0))
+
+            let lineRect = glyphCount > 0
+                ? layoutManager.lineFragmentRect(forGlyphAt: safeGlyph, effectiveRange: nil)
+                : .zero
+            let location = glyphCount > 0
+                ? layoutManager.location(forGlyphAt: safeGlyph)
+                : .zero
+
+            let origin = textView.textContainerOrigin
+            let pointInView = NSPoint(
+                x: lineRect.minX + location.x + origin.x,
+                y: lineRect.maxY + origin.y
+            )
+
+            let pointInWindow = textView.convert(pointInView, to: nil)
+            guard let window = textView.window else {
+                popup.hide()
+                return
+            }
+            let screenPoint = window.convertPoint(toScreen: pointInWindow)
+
+            popup.show(items: items, at: screenPoint, textView: textView)
+        }
+
+        private func insertCompletion(_ item: CompletionItem) {
+            guard let textView else { return }
+            popup.hide()
+
+            if textView.shouldChangeText(in: wordRange, replacementString: item.insertText) {
+                textView.replaceCharacters(in: wordRange, with: item.insertText)
+                let newCursor = wordRange.location + item.insertText.utf16.count
+                textView.setSelectedRange(NSRange(location: newCursor, length: 0))
+                textView.didChangeText()
+            }
+        }
+
+        // MARK: - Runnable range bar
 
         func updateBar(range: NSRange) {
             guard let textView, let barView,
