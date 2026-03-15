@@ -10,6 +10,7 @@ let package = Package(
         .package(url: "https://github.com/vapor/mysql-nio", from: "1.9.0"),
         .package(url: "https://github.com/apple/swift-cassandra-client.git", from: "0.9.1"),
         .package(url: "https://github.com/apple/swift-nio-ssh.git", from: "0.8.0"),
+        .package(url: "https://github.com/orlandos-nl/MongoKitten.git", from: "7.14.0"),
     ],
     targets: [
         .executableTarget(
@@ -19,6 +20,7 @@ let package = Package(
                 .product(name: "MySQLNIO", package: "mysql-nio"),
                 .product(name: "CassandraClient", package: "swift-cassandra-client"),
                 .product(name: "NIOSSH", package: "swift-nio-ssh"),
+                .product(name: "MongoKitten", package: "MongoKitten"),
             ],
             path: "Cove",
             swiftSettings: [

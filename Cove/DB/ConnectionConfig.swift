@@ -7,6 +7,7 @@ enum BackendType: String, Codable, CaseIterable, Sendable {
     case cassandra
     case redis
     case mariadb
+    case mongodb
 
     var displayName: String {
         switch self {
@@ -16,6 +17,7 @@ enum BackendType: String, Codable, CaseIterable, Sendable {
         case .cassandra: "Cassandra"
         case .redis: "Redis"
         case .mariadb: "MariaDB"
+        case .mongodb: "MongoDB"
         }
     }
 
@@ -27,6 +29,7 @@ enum BackendType: String, Codable, CaseIterable, Sendable {
         case .cassandra: "cassandra-logo"
         case .redis: "redis-logo"
         case .mariadb: "mariadb-logo"
+        case .mongodb: "mongodb-logo"
         }
     }
 
@@ -38,6 +41,7 @@ enum BackendType: String, Codable, CaseIterable, Sendable {
         case .cassandra: "9042"
         case .redis: "6379"
         case .mariadb: "3306"
+        case .mongodb: "27017"
         }
     }
 }
@@ -121,6 +125,8 @@ func coveConnect(config: ConnectionConfig) async throws -> (any DatabaseBackend,
             backend = try await RedisBackend.connect(config: effectiveConfig)
         case .mariadb:
             backend = try await MariaDBBackend.connect(config: effectiveConfig)
+        case .mongodb:
+            backend = try await MongoDBBackend.connect(config: effectiveConfig)
         }
         return (backend, tunnel)
     } catch {
