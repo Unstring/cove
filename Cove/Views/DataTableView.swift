@@ -56,10 +56,7 @@ struct DataTableView: View {
                 paginationFooter
             }
         }
-        .sheet(isPresented: Binding(
-            get: { state.showSQLPreview },
-            set: { state.showSQLPreview = $0 }
-        )) {
+        .sheet(isPresented: Bindable(state).showSQLPreview) {
             SQLPreviewSheet()
                 .environment(state)
         }
@@ -250,7 +247,6 @@ private struct NativeDataTable: NSViewRepresentable {
         let currentIds = tableView.tableColumns.map { $0.identifier.rawValue }
         let newIds = table.columns.enumerated().map { "col_\($0)_\($1.name)" }
         if currentIds != newIds {
-            tableView.reloadData()
             for col in tableView.tableColumns.reversed() {
                 tableView.removeTableColumn(col)
             }
