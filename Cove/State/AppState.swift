@@ -164,7 +164,9 @@ final class AppState {
                         try await Task.sleep(for: .seconds(15))
                         throw CancellationError()
                     }
-                    let result = try await group.next()!
+                    guard let result = try await group.next() else {
+                        throw DbError.connection("connection test failed")
+                    }
                     group.cancelAll()
                     return result
                 }
@@ -209,22 +211,24 @@ final class AppState {
         guard let editId = dialog.editingConnectionId,
               let idx = savedConnections.firstIndex(where: { $0.id == editId }) else { return }
 
-        savedConnections[idx].name = dialog.name
-        savedConnections[idx].backend = dialog.backend
-        savedConnections[idx].host = dialog.host
-        savedConnections[idx].port = dialog.port
-        savedConnections[idx].user = dialog.user
-        savedConnections[idx].password = dialog.password
-        savedConnections[idx].database = dialog.database
-        savedConnections[idx].colorHex = dialog.colorHex
-        savedConnections[idx].sshEnabled = dialog.sshEnabled ? true : nil
-        savedConnections[idx].sshHost = dialog.sshEnabled ? dialog.sshHost : nil
-        savedConnections[idx].sshPort = dialog.sshEnabled ? dialog.sshPort : nil
-        savedConnections[idx].sshUser = dialog.sshEnabled ? dialog.sshUser : nil
-        savedConnections[idx].sshAuthMethod = dialog.sshEnabled ? dialog.sshAuthMethod : nil
-        savedConnections[idx].sshPassword = dialog.sshEnabled ? dialog.sshPassword : nil
-        savedConnections[idx].sshPrivateKeyPath = dialog.sshEnabled ? dialog.sshPrivateKeyPath : nil
-        savedConnections[idx].sshPassphrase = dialog.sshEnabled ? dialog.sshPassphrase : nil
+        var c = savedConnections[idx]
+        c.name = dialog.name
+        c.backend = dialog.backend
+        c.host = dialog.host
+        c.port = dialog.port
+        c.user = dialog.user
+        c.password = dialog.password
+        c.database = dialog.database
+        c.colorHex = dialog.colorHex
+        c.sshEnabled = dialog.sshEnabled ? true : nil
+        c.sshHost = dialog.sshEnabled ? dialog.sshHost : nil
+        c.sshPort = dialog.sshEnabled ? dialog.sshPort : nil
+        c.sshUser = dialog.sshEnabled ? dialog.sshUser : nil
+        c.sshAuthMethod = dialog.sshEnabled ? dialog.sshAuthMethod : nil
+        c.sshPassword = dialog.sshEnabled ? dialog.sshPassword : nil
+        c.sshPrivateKeyPath = dialog.sshEnabled ? dialog.sshPrivateKeyPath : nil
+        c.sshPassphrase = dialog.sshEnabled ? dialog.sshPassphrase : nil
+        savedConnections[idx] = c
 
         ConnectionStoreIO.save(ConnectionStore(connections: savedConnections))
         dialog.visible = false
@@ -363,7 +367,7 @@ final class AppState {
         Task {
             do {
                 _ = try await conn.executeQuery(database: db, sql: sql)
-                tree.children.removeValue(forKey: parentPath)
+                tree.removeChildren(for: parentPath)
                 await loadChildren(path: parentPath)
             } catch {
                 errorText = error.localizedDescription
@@ -390,11 +394,18 @@ final class AppState {
         Task {
             do {
                 _ = try await conn.executeQuery(database: db, sql: sql)
-                tree.children.removeValue(forKey: refreshPath)
+                tree.removeChildren(for: refreshPath)
                 await loadChildren(path: refreshPath)
             } catch {
                 errorText = error.localizedDescription
             }
+        }
+    }
+
+    func refreshNode(path: [String]) {
+        Task {
+            tree.removeChildren(for: path)
+            await loadChildren(path: path)
         }
     }
 
@@ -406,12 +417,12 @@ final class AppState {
         do {
             let nodes = try await conn.listChildren(path: path)
             tree.loading.remove(path)
-            tree.children[path] = nodes
+            tree.setChildren(nodes, for: path)
         } catch {
             tree.loading.remove(path)
             errorText = error.localizedDescription
+            tree.rebuildFlat()
         }
-        tree.rebuildFlat()
     }
 
     // MARK: - Query Toggle

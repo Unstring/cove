@@ -67,6 +67,11 @@ struct TreeView: View {
 
     @ViewBuilder
     private func contextMenuItems(for path: [String]) -> some View {
+        if state.connection != nil {
+            Button("Refresh") {
+                state.refreshNode(path: path)
+            }
+        }
         if let label = state.connection?.creatableChildLabel(path: path) {
             Button("New \(label)...") {
                 state.promptCreateChild(parentPath: path)

@@ -16,7 +16,7 @@ struct FlatTreeItem: Identifiable {
 @Observable
 final class TreeState {
     var expanded: Set<[String]> = []
-    var children: [[String]: [HierarchyNode]] = [:]
+    private(set) var children: [[String]: [HierarchyNode]] = [:]
     var selected: [String]?
     var loading: Set<[String]> = []
     private(set) var flatItems: [FlatTreeItem] = []
@@ -37,6 +37,15 @@ final class TreeState {
     func isExpandableAt(_ index: Int) -> Bool {
         guard index < flatItems.count else { return false }
         return flatItems[index].expandable
+    }
+
+    func setChildren(_ nodes: [HierarchyNode], for path: [String]) {
+        children[path] = nodes
+        rebuildFlat()
+    }
+
+    func removeChildren(for path: [String]) {
+        children.removeValue(forKey: path)
     }
 
     func rebuildFlat() {
