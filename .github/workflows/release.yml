@@ -20,9 +20,9 @@ jobs:
       - name: Build
         run: |
           xcodebuild -scheme Cove -configuration Release -derivedDataPath .build build \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=YES \
+            CODE_SIGNING_ALLOWED=YES
 
       - name: Create DMG
         run: |
