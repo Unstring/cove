@@ -26,3 +26,6 @@ Package.resolved
 .env
 *.pem
 *.p12
+
+# Local files
+*.local

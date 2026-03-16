@@ -3,7 +3,7 @@
 [![Download](https://img.shields.io/github/v/release/emanuele-em/cove?label=Download&style=for-the-badge)](https://github.com/emanuele-em/cove/releases/latest)
 
 A native macOS database client. Fast, lightweight, extensible.
-<img src="https://github.com/user-attachments/assets/cd453013-1df0-4ff6-bffc-7790f5def303" />
+<video src="docs/hero.mp4" autoplay loop muted playsinline></video>
 Supports **PostgreSQL**, **ScyllaDB**, and **Redis** out of the box. Adding a new database backend requires zero changes to UI code.
 
 > **Early release** — core browsing and editing works, but features like import/export and query tabs are not yet implemented. See [Roadmap](#roadmap).
