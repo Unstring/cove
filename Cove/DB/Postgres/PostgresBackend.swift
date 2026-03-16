@@ -67,7 +67,7 @@ final class PostgresBackend: DatabaseBackend, @unchecked Sendable {
             username: config.user,
             password: config.password.isEmpty ? nil : config.password,
             database: database.isEmpty ? nil : database,
-            tls: .disable
+            tls: .prefer(.makeClientConfiguration())
         )
         return PostgresClient(configuration: pgConfig)
     }
