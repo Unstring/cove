@@ -8,6 +8,7 @@ enum BackendType: String, Codable, CaseIterable, Sendable {
     case redis
     case mariadb
     case mongodb
+    case sqlite
 
     var displayName: String {
         switch self {
@@ -18,6 +19,7 @@ enum BackendType: String, Codable, CaseIterable, Sendable {
         case .redis: "Redis"
         case .mariadb: "MariaDB"
         case .mongodb: "MongoDB"
+        case .sqlite: "SQLite"
         }
     }
 
@@ -30,6 +32,7 @@ enum BackendType: String, Codable, CaseIterable, Sendable {
         case .redis: "redis-logo"
         case .mariadb: "mariadb-logo"
         case .mongodb: "mongodb-logo"
+        case .sqlite: "sqlite-logo"
         }
     }
 
@@ -42,6 +45,14 @@ enum BackendType: String, Codable, CaseIterable, Sendable {
         case .redis: "6379"
         case .mariadb: "3306"
         case .mongodb: "27017"
+        case .sqlite: "0"
+        }
+    }
+
+    var isFileBased: Bool {
+        switch self {
+        case .sqlite: true
+        default: false
         }
     }
 }
@@ -127,6 +138,8 @@ func coveConnect(config: ConnectionConfig) async throws -> (any DatabaseBackend,
             backend = try await MariaDBBackend.connect(config: effectiveConfig)
         case .mongodb:
             backend = try await MongoDBBackend.connect(config: effectiveConfig)
+        case .sqlite:
+            backend = try await SQLiteBackend.connect(config: effectiveConfig)
         }
         return (backend, tunnel)
     } catch {
