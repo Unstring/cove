@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct ConnectionDialog: View {
     @Environment(AppState.self) private var state
@@ -44,7 +45,12 @@ struct ConnectionDialog: View {
             formField("Backend") {
                 Picker("", selection: $backend) {
                     ForEach(BackendType.allCases, id: \.self) { type in
-                        Text(type.displayName).tag(type)
+                        Label {
+                            Text(type.displayName)
+                        } icon: {
+                            Image(nsImage: scaledIcon(type.iconAsset))
+                        }
+                        .tag(type)
                     }
                 }
                 .labelsHidden()
@@ -57,8 +63,7 @@ struct ConnectionDialog: View {
                         Label {
                             Text(env.displayName)
                         } icon: {
-                            Image(systemName: "circle.fill")
-                                .foregroundStyle(env.color)
+                            Image(nsImage: coloredDot(env.color))
                         }
                         .tag(env)
                     }
@@ -67,36 +72,50 @@ struct ConnectionDialog: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
-            HStack(spacing: 8) {
-                formField("Host") {
-                    TextField("Host", text: $host)
+            if backend.isFileBased {
+                formField("Database File") {
+                    HStack(spacing: 8) {
+                        TextField("Path to database file", text: $database)
+                            .textFieldStyle(.roundedBorder)
+                        Button("Browse...") {
+                            browseForDatabaseFile()
+                        }
+                    }
+                }
+            } else {
+                HStack(spacing: 8) {
+                    formField("Host") {
+                        TextField("Host", text: $host)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    formField("Port") {
+                        TextField("Port", text: $port)
+                            .textFieldStyle(.roundedBorder)
+                    }
+                    .frame(width: 80)
+                }
+
+                formField("User") {
+                    TextField("User", text: $user)
                         .textFieldStyle(.roundedBorder)
                 }
-                formField("Port") {
-                    TextField("Port", text: $port)
+
+                formField("Password") {
+                    SecureField("Password", text: $password)
                         .textFieldStyle(.roundedBorder)
                 }
-                .frame(width: 80)
+
+                formField("Database") {
+                    TextField("Database", text: $database)
+                        .textFieldStyle(.roundedBorder)
+                }
             }
 
-            formField("User") {
-                TextField("User", text: $user)
-                    .textFieldStyle(.roundedBorder)
+            if !backend.isFileBased {
+                Divider()
+
+                sshSection
             }
-
-            formField("Password") {
-                SecureField("Password", text: $password)
-                    .textFieldStyle(.roundedBorder)
-            }
-
-            formField("Database") {
-                TextField("Database", text: $database)
-                    .textFieldStyle(.roundedBorder)
-            }
-
-            Divider()
-
-            sshSection
 
             if !dialog.error.isEmpty {
                 Text(dialog.error)
@@ -244,6 +263,23 @@ struct ConnectionDialog: View {
         }
     }
 
+    private func browseForDatabaseFile() {
+        let panel = NSOpenPanel()
+        panel.title = "Select Database File"
+        panel.canChooseFiles = true
+        panel.canChooseDirectories = false
+        panel.allowsMultipleSelection = false
+        panel.allowedContentTypes = [
+            .init(filenameExtension: "sqlite")!,
+            .init(filenameExtension: "db")!,
+            .init(filenameExtension: "sqlite3")!,
+        ]
+        panel.allowsOtherFileTypes = true
+        if panel.runModal() == .OK, let url = panel.url {
+            database = url.path
+        }
+    }
+
     private func browseForKeyFile() {
         let panel = NSOpenPanel()
         panel.title = "Select SSH Private Key"
@@ -276,6 +312,38 @@ struct ConnectionDialog: View {
         dialog.sshPassword = sshPassword
         dialog.sshPrivateKeyPath = sshPrivateKeyPath
         dialog.sshPassphrase = sshPassphrase
+    }
+
+    private func scaledIcon(_ assetName: String) -> NSImage {
+        guard let source = NSImage(named: assetName) else { return NSImage() }
+        let size: CGFloat = 16
+        let sourceSize = source.size
+        let aspect = sourceSize.width / sourceSize.height
+        let drawSize: NSSize
+        if aspect > 1 {
+            drawSize = NSSize(width: size, height: size / aspect)
+        } else {
+            drawSize = NSSize(width: size * aspect, height: size)
+        }
+        let origin = NSPoint(x: (size - drawSize.width) / 2, y: (size - drawSize.height) / 2)
+        let result = NSImage(size: NSSize(width: size, height: size), flipped: false) { _ in
+            source.draw(in: NSRect(origin: origin, size: drawSize))
+            return true
+        }
+        result.isTemplate = false
+        return result
+    }
+
+    private func coloredDot(_ color: Color) -> NSImage {
+        let dot: CGFloat = 8
+        let image = NSImage(size: NSSize(width: dot, height: dot), flipped: false) { _ in
+            let oval = NSRect(x: 0, y: 0, width: dot, height: dot)
+            NSColor(color).setFill()
+            NSBezierPath(ovalIn: oval).fill()
+            return true
+        }
+        image.isTemplate = false
+        return image
     }
 
     private func formField<Content: View>(_ label: String, @ViewBuilder content: () -> Content) -> some View {
