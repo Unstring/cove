@@ -50,6 +50,8 @@ final class AppState {
     var treeActionDB = ""
     var treeActionRefreshPath: [String] = []
     var environmentSessions: [ConnectionEnvironment: EnvironmentSession] = [:]
+    var connectionSessions: [UUID: ConnectionSession] = [:]
+    private var connectionGeneration = 0
 
     // MARK: - Forwarding computed properties (views keep using state.savedConnections)
 
@@ -85,7 +87,9 @@ final class AppState {
     }
 
     func selectConnection(_ id: UUID) {
+        guard id != activeConnectionId else { return }
         saveCurrentQuery()
+        saveConnectionState()
         activeConnectionId = id
         guard let saved = shared.savedConnections.first(where: { $0.id == id }) else { return }
         let config = ConnectionConfig(
@@ -95,6 +99,7 @@ final class AppState {
         )
         Task {
             await performConnect(config: config)
+            await restoreConnectionSession(for: id)
             saveSession()
         }
     }
@@ -132,6 +137,7 @@ final class AppState {
 
         Task {
             do {
+                self.connectionGeneration += 1
                 await closeTunnel()
                 let (conn, tunnel) = try await coveConnect(config: config)
                 self.connection = conn
@@ -280,6 +286,7 @@ final class AppState {
             handleConnectionDeleted()
         }
 
+        connectionSessions.removeValue(forKey: conn.id)
         conn.deletePasswords()
         shared.savedConnections.remove(at: idx)
         shared.saveConnections()
@@ -291,6 +298,10 @@ final class AppState {
 
     /// Called when another tab deletes a connection this tab is using
     func handleConnectionDeleted() {
+        if let id = activeConnectionId {
+            connectionSessions.removeValue(forKey: id)
+        }
+        connectionGeneration += 1
         Task { await closeTunnel() }
         connection = nil
         tree.reset()
@@ -305,6 +316,8 @@ final class AppState {
 
     func disconnect() {
         saveCurrentQuery()
+        saveConnectionState()
+        connectionGeneration += 1
         Task { await closeTunnel() }
         connection = nil
         tree.reset()
@@ -323,20 +336,27 @@ final class AppState {
     }
 
     private func performConnect(config: ConnectionConfig) async {
+        connectionGeneration += 1
+        connection = nil
+        tree.reset()
+        table = nil
+        structureTable = nil
+        contentMode = .empty
+        errorText = ""
+        breadcrumb = ""
+        showInspector = false
+        queryDatabase = ""
+        query = QueryState()
+        completionSchema = nil
         connecting = true
         await closeTunnel()
         do {
             let (conn, tunnel) = try await coveConnect(config: config)
             self.connection = conn
             self.sshTunnel = tunnel
-            self.tree.reset()
-            self.table = nil
-            self.contentMode = .empty
-            self.errorText = ""
             self.updateBreadcrumb()
             await self.loadChildren(path: [])
             if showQueryEditor {
-                queryDatabase = ""
                 loadCurrentQuery()
                 loadCompletionSchema()
             }
@@ -465,14 +485,17 @@ final class AppState {
 
     func loadChildren(path: [String]) async {
         guard let conn = connection else { return }
+        let gen = connectionGeneration
         tree.loading.insert(path)
         tree.rebuildFlat()
 
         do {
             let nodes = try await conn.listChildren(path: path)
+            guard connectionGeneration == gen else { return }
             tree.loading.remove(path)
             tree.setChildren(nodes, for: path)
         } catch {
+            guard connectionGeneration == gen else { return }
             tree.loading.remove(path)
             errorText = error.localizedDescription
             tree.rebuildFlat()
@@ -511,10 +534,14 @@ final class AppState {
     func loadCompletionSchema() {
         guard let conn = connection else { return }
         let db = queryDatabase
+        let gen = connectionGeneration
         Task {
             do {
-                self.completionSchema = try await conn.fetchCompletionSchema(database: db)
+                let schema = try await conn.fetchCompletionSchema(database: db)
+                guard self.connectionGeneration == gen else { return }
+                self.completionSchema = schema
             } catch {
+                guard self.connectionGeneration == gen else { return }
                 self.completionSchema = nil
             }
         }
@@ -542,8 +569,10 @@ final class AppState {
 
     func loadNodeDetails(path: [String]) async {
         guard let conn = connection else { return }
+        let gen = connectionGeneration
         do {
             let data = try await conn.fetchNodeDetails(path: path)
+            guard connectionGeneration == gen else { return }
             errorText = ""
             if data.columns.isEmpty {
                 contentMode = .empty
@@ -552,6 +581,7 @@ final class AppState {
                 contentMode = .table
             }
         } catch {
+            guard connectionGeneration == gen else { return }
             errorText = error.localizedDescription
         }
     }
@@ -590,12 +620,15 @@ final class AppState {
         guard let table, let conn = connection else { return }
         let path = table.tablePath
         guard let structurePath = conn.structurePath(for: path) else { return }
+        let gen = connectionGeneration
 
         Task {
             do {
                 let data = try await conn.fetchNodeDetails(path: structurePath)
+                guard self.connectionGeneration == gen else { return }
                 self.structureTable = TableState(tablePath: path, result: data)
             } catch {
+                guard self.connectionGeneration == gen else { return }
                 self.errorText = error.localizedDescription
             }
         }
@@ -605,6 +638,7 @@ final class AppState {
 
     func loadTableData(path: [String], offset: UInt32) async {
         guard let conn = connection else { return }
+        let gen = connectionGeneration
         let sortCol = table?.sortColumn
         let sortDir = table?.sortDirection ?? .asc
         let limit = table?.pageSize ?? 50
@@ -613,6 +647,7 @@ final class AppState {
 
         do {
             let data = try await conn.fetchTableData(path: path, limit: limit, offset: offset, sort: sort)
+            guard connectionGeneration == gen else { return }
             errorText = ""
             if let existing = table, existing.tablePath == path {
                 existing.updateData(data)
@@ -623,6 +658,7 @@ final class AppState {
             }
             contentMode = .table
         } catch {
+            guard connectionGeneration == gen else { return }
             errorText = error.localizedDescription
         }
     }
@@ -997,13 +1033,63 @@ final class AppState {
 
     // MARK: - Session Persistence
 
-    private func saveEnvironmentState() {
-        environmentSessions[selectedEnvironment] = EnvironmentSession(
-            activeConnectionId: activeConnectionId,
+    private func saveConnectionState() {
+        guard let id = activeConnectionId else { return }
+        connectionSessions[id] = ConnectionSession(
             selectedPath: tree.selected,
             expandedPaths: tree.expanded.isEmpty ? nil : tree.expanded,
             showInspector: showInspector,
-            showQueryEditor: showQueryEditor
+            showQueryEditor: showQueryEditor,
+            queryDatabase: queryDatabase.isEmpty ? nil : queryDatabase
+        )
+    }
+
+    private func restoreConnectionSession(for id: UUID) async {
+        guard let session = connectionSessions[id] else { return }
+
+        showInspector = session.showInspector ?? false
+
+        if let expandedPaths = session.expandedPaths {
+            let sorted = expandedPaths.sorted { $0.count < $1.count }
+            for path in sorted {
+                tree.expanded.insert(path)
+                if tree.children[path] == nil {
+                    await loadChildren(path: path)
+                }
+            }
+        }
+
+        if let targetPath = session.selectedPath {
+            for i in 1..<targetPath.count {
+                let prefix = Array(targetPath.prefix(i))
+                tree.expanded.insert(prefix)
+                if tree.children[prefix] == nil {
+                    await loadChildren(path: prefix)
+                }
+            }
+            tree.selected = targetPath
+            tree.rebuildFlat()
+            updateBreadcrumb()
+
+            if connection?.isDataBrowsable(path: targetPath) == true {
+                await loadTableData(path: targetPath, offset: 0)
+            } else if targetPath.count >= 2 {
+                await loadNodeDetails(path: targetPath)
+            }
+        }
+
+        if session.showQueryEditor == true {
+            showQueryEditor = true
+            queryDatabase = session.queryDatabase ?? tree.selected?.first ?? ""
+            loadCurrentQuery()
+            loadCompletionSchema()
+        }
+    }
+
+    private func saveEnvironmentState() {
+        saveConnectionState()
+        environmentSessions[selectedEnvironment] = EnvironmentSession(
+            activeConnectionId: activeConnectionId
         )
     }
 
@@ -1015,12 +1101,18 @@ final class AppState {
             envDict[key.rawValue] = val
         }
 
+        var connDict: [String: ConnectionSession] = [:]
+        for (key, val) in connectionSessions {
+            connDict[key.uuidString] = val
+        }
+
         let tab = TabSession(
             tabId: tabId,
             showSidebar: showSidebar,
             sidebarWidth: sidebarWidth,
             selectedEnvironment: selectedEnvironment,
-            environments: envDict
+            environments: envDict,
+            connectionSessions: connDict.isEmpty ? nil : connDict
         )
         shared.saveTabSession(tab)
     }
@@ -1031,6 +1123,7 @@ final class AppState {
         saveCurrentQuery()
         saveEnvironmentState()
 
+        connectionGeneration += 1
         connection = nil
         tree.reset()
         table = nil
@@ -1055,9 +1148,8 @@ final class AppState {
     }
 
     private func restoreEnvironmentSession() async {
-        guard let envSession = environmentSessions[selectedEnvironment] else { return }
-
-        guard let connId = envSession.activeConnectionId,
+        guard let envSession = environmentSessions[selectedEnvironment],
+              let connId = envSession.activeConnectionId,
               let saved = shared.savedConnections.first(where: { $0.id == connId }) else { return }
 
         activeConnectionId = connId
@@ -1076,51 +1168,16 @@ final class AppState {
             self.table = nil
             self.contentMode = .empty
             self.errorText = ""
-            self.showInspector = envSession.showInspector ?? false
             self.updateBreadcrumb()
             await self.loadChildren(path: [])
         } catch {
-            self.errorText = error.localizedDescription
+            activeConnectionId = nil
             connecting = false
             return
         }
         connecting = false
 
-        if let expandedPaths = envSession.expandedPaths {
-            let sorted = expandedPaths.sorted { $0.count < $1.count }
-            for path in sorted {
-                tree.expanded.insert(path)
-                if tree.children[path] == nil {
-                    await loadChildren(path: path)
-                }
-            }
-        }
-
-        if let targetPath = envSession.selectedPath {
-            for i in 1..<targetPath.count {
-                let prefix = Array(targetPath.prefix(i))
-                tree.expanded.insert(prefix)
-                if tree.children[prefix] == nil {
-                    await loadChildren(path: prefix)
-                }
-            }
-            tree.selected = targetPath
-            tree.rebuildFlat()
-            updateBreadcrumb()
-
-            if connection?.isDataBrowsable(path: targetPath) == true {
-                await loadTableData(path: targetPath, offset: 0)
-            } else if targetPath.count >= 3 {
-                await loadNodeDetails(path: targetPath)
-            }
-        }
-
-        if envSession.showQueryEditor == true {
-            showQueryEditor = true
-            queryDatabase = tree.selected?.first ?? ""
-            loadCurrentQuery()
-            loadCompletionSchema()
-        }
+        await restoreConnectionSession(for: connId)
     }
 
     func restoreSession() async {
@@ -1144,6 +1201,14 @@ final class AppState {
                 if let env = ConnectionEnvironment(rawValue: key) {
                     environmentSessions[env] = val
                     print("[Cove] restoreSession(\(tabId.uuidString.prefix(8))): loaded env \(key), connId=\(val.activeConnectionId?.uuidString.prefix(8) ?? "nil")")
+                }
+            }
+        }
+
+        if let connDict = tab.connectionSessions {
+            for (key, val) in connDict {
+                if let uuid = UUID(uuidString: key) {
+                    connectionSessions[uuid] = val
                 }
             }
         }
