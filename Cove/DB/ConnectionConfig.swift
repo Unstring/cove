@@ -110,15 +110,16 @@ func coveConnect(config: ConnectionConfig) async throws -> (any DatabaseBackend,
     if let sshConfig = config.sshTunnel {
         let remoteHost = config.host
         let remotePort = Int(config.port) ?? 0
-        tunnel = try await SSHTunnel.establish(
+        let established = try await SSHTunnel.establish(
             config: sshConfig,
             remoteHost: remoteHost,
             remotePort: remotePort
         )
+        tunnel = established
         effectiveConfig = ConnectionConfig(
             backend: config.backend,
             host: "127.0.0.1",
-            port: String(tunnel!.localPort),
+            port: String(established.localPort),
             user: config.user,
             password: config.password,
             database: config.database

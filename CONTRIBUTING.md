@@ -1,5 +1,7 @@
 # Contributing
 
+Cove supports 9 database backends (PostgreSQL, MySQL, MariaDB, SQLite, MongoDB, Redis, ScyllaDB, Cassandra, Elasticsearch) through a single `DatabaseBackend` protocol. All backends live under `Cove/DB/`.
+
 ## Build
 
 ```
