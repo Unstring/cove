@@ -14,15 +14,15 @@ A native macOS database client. Fast, lightweight, extensible.
 
 <table>
   <tr>
-    <td align="center"><img src="https://wiki.postgresql.org/images/a/a4/PostgreSQL_logo.3colors.svg" width="40"><br><b>PostgreSQL</b></td>
-    <td align="center"><img src="https://labs.mysql.com/common/logos/mysql-logo.svg?v2" width="40"><br><b>MySQL</b></td>
-    <td align="center"><img src="https://mariadb.com/wp-content/uploads/2019/11/mariadb-logo-vert_blue-transparent.png" width="40"><br><b>MariaDB</b></td>
-    <td align="center"><img src="https://www.sqlite.org/images/sqlite370_banner.gif" width="60"><br><b>SQLite</b></td>
-    <td align="center"><img src="https://www.mongodb.com/assets/images/global/favicon.ico" width="40"><br><b>MongoDB</b></td>
-    <td align="center"><img src="https://redis.io/wp-content/uploads/2024/04/Logotype.svg" width="40"><br><b>Redis</b></td>
-    <td align="center"><img src="https://upload.wikimedia.org/wikipedia/en/4/41/ScyllaDB_logo.png" width="40"><br><b>ScyllaDB</b></td>
-    <td align="center"><img src="https://cassandra.apache.org/_/img/cassandra_logo.svg" width="40"><br><b>Cassandra</b></td>
-    <td align="center"><img src="https://assets.streamlinehq.com/image/private/w_300,h_300,ar_1/f_auto/v1/icons/3/elasticsearch-rhi1c3ieeke9l2ht6jy755.png/elasticsearch-a2ax512pgkubl5gtrelkoc.png?_a=DATAiZAAZAA0" width="40"><br><b>Elasticsearch</b></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/emanuele-em/cove/refs/heads/main/Cove/Assets.xcassets/postgres-logo.imageset/postgres-logo.png" width="40"><br><b>PostgreSQL</b></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/emanuele-em/cove/refs/heads/main/Cove/Assets.xcassets/mysql-logo.imageset/mysql-logo.png" width="40"><br><b>MySQL</b></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/emanuele-em/cove/refs/heads/main/Cove/Assets.xcassets/mariadb-logo.imageset/mariadb-logo.png" width="40"><br><b>MariaDB</b></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/emanuele-em/cove/refs/heads/main/Cove/Assets.xcassets/sqlite-logo.imageset/sqlite-logo.png" width="40"><br><b>SQLite</b></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/emanuele-em/cove/refs/heads/main/Cove/Assets.xcassets/mongodb-logo.imageset/mongodb-logo.png" width="40"><br><b>MongoDB</b></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/emanuele-em/cove/refs/heads/main/Cove/Assets.xcassets/redis-logo.imageset/redis-logo.png" width="40"><br><b>Redis</b></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/emanuele-em/cove/refs/heads/main/Cove/Assets.xcassets/scylladb-logo.imageset/scylladb-logo.png" width="40"><br><b>ScyllaDB</b></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/emanuele-em/cove/refs/heads/main/Cove/Assets.xcassets/cassandra-logo.imageset/cassandra-logo.png" width="40"><br><b>Cassandra</b></td>
+    <td align="center"><img src="https://raw.githubusercontent.com/emanuele-em/cove/refs/heads/main/Cove/Assets.xcassets/elasticsearch-logo.imageset/elasticsearch-logo.png" width="40"><br><b>Elasticsearch</b></td>
   </tr>
 </table>
 
