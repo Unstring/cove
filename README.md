@@ -37,7 +37,6 @@ Adding a new backend requires zero changes to UI code — see [`DB/README.md`](C
 - **Connection environments** — local, dev, staging, production
 - **SSH tunneling** — password or private key authentication
 - **Session persistence** — connections and tabs restore across app relaunches
-- **Encrypted credentials** — stored in macOS Keychain
 - **Color-coded indicators** and connection tooltips
 - Native macOS UI — no Electron, no web views
 
