@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- SQLite over SSH — browse and query remote SQLite files via SSH exec channels ([#2](https://github.com/emanuele-em/cove/pull/2) by [@eznix86](https://github.com/eznix86))
+- DuckDB over SSH — same remote CLI execution pattern as SQLite
+- Shared `FileBackendExecution` abstraction for file-based backend SSH support
+
+### Changed
+- Extracted SSH connection primitives into shared `SSHSupport` module
+- Replaced `isFileBased` boolean with `BackendCapabilities` struct for richer UI adaptation
+
 ## [0.1.0] - 2026-03-20
 
 ### Added
