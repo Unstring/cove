@@ -327,7 +327,7 @@ extension MariaDBBackend {
         do {
             rows = try await conn.simpleQuery(sql).get()
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
         return rows.compactMap { row in
             guard let name = row.column(columnName)?.string else { return nil }
@@ -366,7 +366,7 @@ extension MariaDBBackend {
         do {
             rows = try await conn.simpleQuery(sql).get()
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
         return rows.compactMap { row in
             guard let name = row.column("CONSTRAINT_NAME")?.string,

@@ -87,7 +87,7 @@ extension SQLServerBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
     }
 
@@ -102,7 +102,7 @@ extension SQLServerBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
 
         guard let first = rows.first else {

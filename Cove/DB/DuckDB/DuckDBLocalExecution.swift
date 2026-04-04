@@ -45,7 +45,7 @@ final class DuckDBLocalExecution: FileBackendExecution, @unchecked Sendable {
         do {
             _ = try execution.runSQL("SELECT 1")
         } catch {
-            throw DbError.connection("DuckDB connection test failed: \(error.localizedDescription)")
+            throw DbError.connection("DuckDB connection test failed: \(String(describing: error))")
         }
 
         return execution

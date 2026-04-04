@@ -55,7 +55,6 @@ final class ClickHouseBackend: DatabaseBackend, @unchecked Sendable {
 
     static func connect(config: ConnectionConfig) async throws -> ClickHouseBackend {
         let backend = ClickHouseBackend(config: config)
-        // Validate connectivity
         let conn = try await backend.newConnection(database: config.database)
         backend.lock.withLock { backend.connections.append(conn) }
         return backend
@@ -112,6 +111,6 @@ final class ClickHouseBackend: DatabaseBackend, @unchecked Sendable {
         if let ex = error as? ExceptionMessage {
             return ex.displayText
         }
-        return error.localizedDescription
+        return String(describing: error)
     }
 }

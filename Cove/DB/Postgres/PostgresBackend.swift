@@ -61,9 +61,12 @@ final class PostgresBackend: DatabaseBackend, @unchecked Sendable {
                 name = try row.decode(String.self, context: .default)
             }
             dbName = name
+        } catch let error as PSQLError {
+            backend.shutdown()
+            throw DbError.connection(error.serverMessage)
         } catch {
             backend.shutdown()
-            throw DbError.connection(error.localizedDescription)
+            throw DbError.connection(String(describing: error))
         }
 
         backend.lock.withLock {

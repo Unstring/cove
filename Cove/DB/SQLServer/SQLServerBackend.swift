@@ -62,7 +62,7 @@ final class SQLServerBackend: DatabaseBackend, @unchecked Sendable {
             _ = try await pool.query("SELECT 1", [])
         } catch {
             try? await pool.close()
-            throw DbError.connection(error.localizedDescription)
+            throw DbError.connection(String(describing: error))
         }
 
         return backend

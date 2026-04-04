@@ -36,11 +36,10 @@ final class MongoDBBackend: DatabaseBackend, @unchecked Sendable {
             let db = try await MongoDatabase.connect(to: connStr)
             let backend = MongoDBBackend(connectionString: connStr, initialDb: db)
 
-            // Verify connectivity
             _ = try await db.listCollections()
             return backend
         } catch {
-            throw DbError.connection(error.localizedDescription)
+            throw DbError.connection(String(describing: error))
         }
     }
 
@@ -55,7 +54,7 @@ final class MongoDBBackend: DatabaseBackend, @unchecked Sendable {
             lock.withLock { databases[name] = db }
             return db
         } catch {
-            throw DbError.connection("failed to connect to database '\(name)': \(error.localizedDescription)")
+            throw DbError.connection("failed to connect to database '\(name)': \(String(describing: error))")
         }
     }
 

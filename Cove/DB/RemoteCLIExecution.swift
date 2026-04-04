@@ -30,7 +30,7 @@ final class RemoteCLIExecution: FileBackendExecution, @unchecked Sendable {
         do {
             runner = try await SSHCommandRunner.connect(config: sshConfig)
         } catch {
-            throw DbError.connection(error.localizedDescription)
+            throw DbError.connection(String(describing: error))
         }
 
         let execution = RemoteCLIExecution(binaryName: binaryName, remotePath: remotePath, runner: runner)
@@ -83,7 +83,7 @@ final class RemoteCLIExecution: FileBackendExecution, @unchecked Sendable {
         do {
             return try await runner.run(command)
         } catch {
-            throw DbError.connection(error.localizedDescription)
+            throw DbError.connection(String(describing: error))
         }
     }
 

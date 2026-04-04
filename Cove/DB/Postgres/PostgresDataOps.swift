@@ -37,7 +37,7 @@ extension PostgresBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
 
         let countSql = "SELECT COUNT(*) FROM \(fqn)"
@@ -52,7 +52,7 @@ extension PostgresBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
 
         return QueryResult(
@@ -87,7 +87,7 @@ extension PostgresBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
     }
 
@@ -102,7 +102,7 @@ extension PostgresBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
 
         var columnInfos: [ColumnInfo] = []
@@ -128,7 +128,7 @@ extension PostgresBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
 
         if columnInfos.isEmpty {

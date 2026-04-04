@@ -70,7 +70,7 @@ final class MariaDBBackend: DatabaseBackend, @unchecked Sendable {
         do {
             addr = try SocketAddress.makeAddressResolvingHost(config.host, port: Int(config.port) ?? 3306)
         } catch {
-            throw DbError.connection(error.localizedDescription)
+            throw DbError.connection(String(describing: error))
         }
 
         let pw = config.password.isEmpty ? nil : config.password
@@ -90,7 +90,7 @@ final class MariaDBBackend: DatabaseBackend, @unchecked Sendable {
                     password: pw, tlsConfiguration: tls, on: el
                 ).get()
             } catch {
-                throw DbError.connection(plainError.localizedDescription)
+                throw DbError.connection(String(describing: plainError))
             }
         }
     }

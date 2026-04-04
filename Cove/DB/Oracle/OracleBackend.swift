@@ -56,9 +56,12 @@ final class OracleBackend: DatabaseBackend, @unchecked Sendable {
             try await client.withConnection { conn in
                 try await conn.execute(OracleStatement(unsafeSQL: "SELECT 1 FROM DUAL"))
             }
+        } catch let error as OracleSQLError {
+            task.cancel()
+            throw DbError.connection(error.serverMessage)
         } catch {
             task.cancel()
-            throw DbError.connection(error.localizedDescription)
+            throw DbError.connection(String(describing: error))
         }
 
         return OracleBackend(client: client, runningTask: task)

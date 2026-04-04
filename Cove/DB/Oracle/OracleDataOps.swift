@@ -85,7 +85,7 @@ extension OracleBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
     }
 
@@ -100,7 +100,7 @@ extension OracleBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
 
         var columnInfos: [ColumnInfo] = []
@@ -126,7 +126,7 @@ extension OracleBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
 
         if columnInfos.isEmpty {

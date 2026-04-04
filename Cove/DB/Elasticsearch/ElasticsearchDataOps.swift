@@ -56,7 +56,6 @@ extension ElasticsearchBackend {
             )
         }
 
-        // Extract column names from union of all _source keys
         let keys = extractKeys(from: hitArray)
         let columns = keys.map { key in
             ColumnInfo(
@@ -66,7 +65,6 @@ extension ElasticsearchBackend {
             )
         }
 
-        // Fetch mapping for type info
         let mappingTypes = try? await fetchMappingTypes(index: indexName)
 
         let rows: [[String?]] = hitArray.map { hit in
@@ -79,7 +77,6 @@ extension ElasticsearchBackend {
             }
         }
 
-        // Update column types from mapping if available
         let typedColumns: [ColumnInfo]
         if let mappingTypes {
             typedColumns = keys.map { key in
@@ -294,7 +291,6 @@ extension ElasticsearchBackend {
             return QueryResult(columns: cols, rows: [[String(count)]], rowsAffected: nil, totalCount: nil)
         }
 
-        // CRUD response (index, update, delete single doc)
         if let docResult = dict["result"] as? String {
             var rows: [[String?]] = [["result", docResult]]
             if let id = dict["_id"] as? String { rows.append(["_id", id]) }
@@ -307,13 +303,11 @@ extension ElasticsearchBackend {
             return QueryResult(columns: cols, rows: rows, rowsAffected: 1, totalCount: nil)
         }
 
-        // acknowledged response (create/delete index)
         if let ack = dict["acknowledged"] as? Bool {
             let cols = [ColumnInfo(name: "Result", typeName: "text", isPrimaryKey: false)]
             return QueryResult(columns: cols, rows: [[ack ? "acknowledged" : "not acknowledged"]], rowsAffected: nil, totalCount: nil)
         }
 
-        // Generic: show as key-value pairs
         let cols = [
             ColumnInfo(name: "Property", typeName: "text", isPrimaryKey: false),
             ColumnInfo(name: "Value", typeName: "text", isPrimaryKey: false),

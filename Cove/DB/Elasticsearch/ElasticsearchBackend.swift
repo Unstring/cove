@@ -111,7 +111,6 @@ final class ElasticsearchBackend: DatabaseBackend, @unchecked Sendable {
 
         let parsed = try JSONSerialization.jsonObject(with: data)
 
-        // Check for ES error envelope
         if let dict = parsed as? [String: Any],
            let errorObj = dict["error"] {
             let reason: String

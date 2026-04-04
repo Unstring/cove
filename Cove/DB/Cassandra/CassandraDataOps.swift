@@ -30,7 +30,6 @@ extension CassandraBackend {
             let colCount = rows.columnsCount
             let colNames = try rows.columnNames()
 
-            // Align column info to result order and build type list
             orderedColumns = colNames.map {
                 typeMap[$0] ?? ColumnInfo(name: $0, typeName: "", isPrimaryKey: false)
             }
@@ -44,7 +43,7 @@ extension CassandraBackend {
                 allRows.append(vals)
             }
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
 
         let pageRows = Array(allRows.dropFirst(Int(offset)).prefix(Int(limit)))
@@ -77,7 +76,7 @@ extension CassandraBackend {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
     }
 
@@ -98,7 +97,7 @@ extension CassandraBackend {
         do {
             try await client.run(cql)
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
     }
 

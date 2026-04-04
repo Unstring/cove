@@ -32,7 +32,7 @@ extension RedisBackend {
             let resp = try await sendCommand(parsed.command, parsed.args, db: db)
             return formatCommandResult(resp)
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
     }
 
@@ -308,7 +308,6 @@ extension RedisBackend {
         let lenResp = try await sendCommand("XLEN", [key], db: db)
         let totalCount = UInt64(lenResp.int ?? 0)
 
-        // Collect all field names across entries for dynamic columns
         var fieldOrder: [String] = []
         var fieldSet = Set<String>()
         var parsed: [(id: String, fields: [String: String])] = []
@@ -360,7 +359,6 @@ extension RedisBackend {
                 return QueryResult(columns: [], rows: [], rowsAffected: 0, totalCount: nil)
             }
 
-            // Check if it looks like key-value pairs (even count, alternating string keys)
             if items.count >= 2 && items.count % 2 == 0,
                items.enumerated().allSatisfy({ $0.offset % 2 == 1 || $0.element.string != nil }) {
                 let cols = [

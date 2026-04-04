@@ -50,7 +50,7 @@ final class CassandraBackend: DatabaseBackend, @unchecked Sendable {
             _ = try await client.query("SELECT cluster_name FROM system.local")
         } catch {
             try? client.shutdown()
-            throw DbError.connection(error.localizedDescription)
+            throw DbError.connection(String(describing: error))
         }
 
         return CassandraBackend(client: client)

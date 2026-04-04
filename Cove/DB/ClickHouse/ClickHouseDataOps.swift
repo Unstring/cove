@@ -175,7 +175,6 @@ extension ClickHouseBackend {
         let db = escapeSQLString(database)
         let tbl = escapeSQLString(table)
 
-        // Get sorting key to determine "primary key" columns
         let keySQL = """
             SELECT sorting_key FROM system.tables \
             WHERE database = '\(db)' AND name = '\(tbl)'

@@ -49,7 +49,7 @@ final class ScyllaBackend: DatabaseBackend, @unchecked Sendable {
             _ = try await client.query("SELECT cluster_name FROM system.local")
         } catch {
             try? client.shutdown()
-            throw DbError.connection(error.localizedDescription)
+            throw DbError.connection(String(describing: error))
         }
 
         return ScyllaBackend(client: client)

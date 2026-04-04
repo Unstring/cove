@@ -58,7 +58,7 @@ final class RedisBackend: DatabaseBackend, @unchecked Sendable {
         } catch let error as DbError {
             throw error
         } catch {
-            throw DbError.connection(error.localizedDescription)
+            throw DbError.connection(String(describing: error))
         }
 
         return backend

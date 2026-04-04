@@ -30,7 +30,7 @@ extension MySQLBackend {
         do {
             dataRows = try await conn.simpleQuery(dataSql).get()
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
         let rows = dataRows.map { decodeRow($0) }
 
@@ -39,7 +39,7 @@ extension MySQLBackend {
         do {
             countRows = try await conn.simpleQuery(countSql).get()
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
         let totalCount = countRows.first?.column("cnt")?.int.map(UInt64.init) ?? 0
 
@@ -71,7 +71,7 @@ extension MySQLBackend {
         do {
             _ = try await conn.simpleQuery(sql).get()
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
     }
 
@@ -82,7 +82,7 @@ extension MySQLBackend {
         do {
             rows = try await conn.simpleQuery(sql).get()
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
 
         guard let first = rows.first else {
@@ -107,7 +107,7 @@ extension MySQLBackend {
         do {
             schemaRows = try await conn.simpleQuery(schemaSQL).get()
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
         let schemas = schemaRows.compactMap { $0.column("SCHEMA_NAME")?.string }
 
@@ -121,7 +121,7 @@ extension MySQLBackend {
         do {
             colRows = try await conn.simpleQuery(colSQL).get()
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
 
         var tableMap: [String: [String: [CompletionColumn]]] = [:]
@@ -152,7 +152,7 @@ extension MySQLBackend {
         do {
             funcRows = try await conn.simpleQuery(funcSQL).get()
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
         let functions = funcRows.compactMap { $0.column("ROUTINE_NAME")?.string }
 
@@ -176,7 +176,7 @@ extension MySQLBackend {
         do {
             rows = try await conn.simpleQuery(sql).get()
         } catch {
-            throw DbError.query(error.localizedDescription)
+            throw DbError.query(String(describing: error))
         }
         return rows.compactMap { row in
             guard let name = row.column("COLUMN_NAME")?.string,
