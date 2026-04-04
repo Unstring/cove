@@ -151,4 +151,4 @@ final class MyDBBackend: DatabaseBackend, @unchecked Sendable {
 | `Oracle/` | Schema-based SQL backend (no per-DB connections), `withConnection` pool pattern, Oracle system views |
 | `SQLServer/` | Multi-database + schema SQL backend, bracket quoting, T-SQL system views, `SQLValue` enum decoding |
 | `ClickHouse/` | Column-oriented OLAP backend, `ALTER TABLE` mutations for UPDATE/DELETE, columnar→row transpose, ClickHouseNIO `EventLoopFuture` bridging |
-| `DuckDB/` | File-based analytical DB with local/SSH execution, C API via system library, `information_schema` introspection |
+| `DuckDB/` | File-based analytical DB with local/SSH execution, C API via `Sources/CDuckDB`, `duckdb_columns()`/`duckdb_constraints()` for introspection |

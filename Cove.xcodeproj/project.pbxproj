@@ -87,6 +87,7 @@
 		};
 /* End PBXFrameworksBuildPhase section */
 
+
 /* Begin PBXGroup section */
 		AA000002 /* root */ = {
 			isa = PBXGroup;
@@ -251,12 +252,14 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"/opt/homebrew/lib",
+					"/usr/local/lib",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 0.1.2;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-lduckdb",
+					"-undefined",
+					"dynamic_lookup",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.cove.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -292,12 +295,14 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"/opt/homebrew/lib",
+					"/usr/local/lib",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MARKETING_VERSION = 0.1.2;
 				OTHER_LDFLAGS = (
 					"$(inherited)",
-					"-lduckdb",
+					"-undefined",
+					"dynamic_lookup",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = com.cove.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -380,6 +385,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"/opt/homebrew/lib",
+					"/usr/local/lib",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.cove.app.tests;
@@ -408,6 +414,7 @@
 				LIBRARY_SEARCH_PATHS = (
 					"$(inherited)",
 					"/opt/homebrew/lib",
+					"/usr/local/lib",
 				);
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.cove.app.tests;

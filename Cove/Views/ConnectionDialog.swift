@@ -58,6 +58,19 @@ struct ConnectionDialog: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
 
+            if let notice = backend.connectionNotice {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "info.circle")
+                        .foregroundStyle(.secondary)
+                    Text(notice)
+                        .font(.system(size: 11))
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .padding(10)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+            }
+
             formField("Environment") {
                 Picker("", selection: $selectedEnvironment) {
                     ForEach(ConnectionEnvironment.allCases, id: \.self) { env in

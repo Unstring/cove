@@ -99,6 +99,15 @@ enum BackendType: String, Codable, CaseIterable, Sendable {
     }
 
     var isFileBased: Bool { capabilities.usesFilePath }
+
+    var connectionNotice: String? {
+        switch self {
+        case .duckdb:
+            "Requires brew install duckdb. Full Swift support is pending the official duckdb-swift package."
+        default:
+            nil
+        }
+    }
 }
 
 enum SSHAuthMethod: String, Codable, Sendable, CaseIterable {
