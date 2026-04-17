@@ -22,13 +22,17 @@ struct ConnectionRail: View {
 
     private var addButton: some View {
         Button {
-            state.openDialog()
+            state.dialog.reset()
+            state.dialog.environment = state.selectedEnvironment
+            CoveDialogHost.present(key: "connection-dialog", onDismiss: { state.dialogCancel() }) {
+                ConnectionDialog().environment(state)
+            }
         } label: {
             Image(systemName: "plus")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(.secondary)
                 .frame(width: 38, height: 38)
-                .background(.thickMaterial, in: RoundedRectangle(cornerRadius: 8))
+                .background(CoveTheme.bgSecondary, in: RoundedRectangle(cornerRadius: 8))
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
                         .strokeBorder(.quaternary, lineWidth: 1)
@@ -73,7 +77,12 @@ private struct ConnectionButton: View {
                 Button("Disconnect") { state.disconnect() }
                 Divider()
             }
-            Button("Edit") { state.openEditDialog(for: conn) }
+            Button("Edit") {
+                state.openEditDialog(for: conn)
+                CoveDialogHost.present(key: "connection-dialog", onDismiss: { state.dialogCancel() }) {
+                    ConnectionDialog().environment(state)
+                }
+            }
             Button("Delete", role: .destructive) { state.requestDeleteConnection(conn) }
         }
     }

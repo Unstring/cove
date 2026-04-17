@@ -28,6 +28,7 @@ final class AppState {
     var sidebarWidth: CGFloat = 220
     var showInspector = false
     var showQueryEditor = false
+    var focusQueryEditor = false
     var contentMode: ContentMode = .empty
     var tableTab: TableTab = .data
     var structureTable: TableState?
@@ -533,6 +534,7 @@ final class AppState {
             }
         } else {
             showQueryEditor = true
+            focusQueryEditor = true
             queryDatabase = tree.selected?.first ?? ""
             loadCurrentQuery()
             loadCompletionSchema()

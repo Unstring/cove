@@ -70,13 +70,15 @@ enum SQLHighlighter {
         return tokens
     }
 
+    @MainActor
     static func colorFor(_ kind: SQLTokenKind) -> NSColor {
+        let theme = ThemeManager.shared.current
         switch kind {
-        case .normal: .labelColor
-        case .keyword: .systemBlue
-        case .string: .systemOrange
-        case .number: .systemGreen
-        case .comment: .systemGray
+        case .normal:   return NSColor(.primary)
+        case .keyword:  return NSColor(theme.sqlKeyword)
+        case .string:   return NSColor(theme.sqlString)
+        case .number:   return NSColor(theme.sqlNumber)
+        case .comment:  return NSColor(theme.sqlComment)
         }
     }
 

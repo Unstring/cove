@@ -7,9 +7,7 @@ struct SidebarView: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background {
-                VisualEffectBackground(material: .sidebar)
-            }
+            .background(CoveTheme.bgSecondary)
     }
 
     @ViewBuilder
@@ -27,16 +25,16 @@ struct SidebarView: View {
         } else {
             TreeView()
                 .sheet(isPresented: Bindable(state).showCreateSheet) {
-                    CreateChildSheet()
-                        .environment(state)
+                    CreateChildSheet().environment(state)
                 }
                 .sheet(isPresented: Bindable(state).showTreeAction) {
-                    DropConfirmSheet()
-                        .environment(state)
+                    DropConfirmSheet().environment(state)
                 }
         }
     }
 }
+
+// MARK: - CreateChildSheet
 
 struct CreateChildSheet: View {
     @Environment(AppState.self) private var state
@@ -62,16 +60,11 @@ struct CreateChildSheet: View {
                 ForEach(state.createSheetFields) { field in
                     if let options = field.options {
                         Picker(field.label, selection: binding(for: field)) {
-                            ForEach(options, id: \.self) { option in
-                                Text(option).tag(option)
-                            }
+                            ForEach(options, id: \.self) { Text($0).tag($0) }
                         }
                     } else {
-                        TextField(
-                            field.label,
-                            text: binding(for: field),
-                            prompt: Text(field.placeholder)
-                        )
+                        TextField(field.label, text: binding(for: field),
+                                  prompt: Text(field.placeholder))
                     }
                 }
             }
@@ -94,23 +87,17 @@ struct CreateChildSheet: View {
                     .padding(12)
             }
             .frame(maxHeight: 80)
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(CoveTheme.bgTertiary)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .padding(.horizontal, 16)
 
             HStack {
                 Spacer()
-                Button("Cancel") {
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Button("Execute") {
-                    state.executeCreateChild(values: values)
-                }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
-                .disabled(sqlPreview == nil)
+                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Execute") { state.executeCreateChild(values: values) }
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
+                    .disabled(sqlPreview == nil)
             }
             .padding(16)
         }
@@ -118,19 +105,17 @@ struct CreateChildSheet: View {
         .fixedSize(horizontal: false, vertical: true)
         .background()
         .onAppear {
-            for field in state.createSheetFields {
-                values[field.id] = field.defaultValue
-            }
+            for field in state.createSheetFields { values[field.id] = field.defaultValue }
         }
     }
 
     private func binding(for field: CreateField) -> Binding<String> {
-        Binding(
-            get: { values[field.id] ?? field.defaultValue },
-            set: { values[field.id] = $0 }
-        )
+        Binding(get: { values[field.id] ?? field.defaultValue },
+                set: { values[field.id] = $0 })
     }
 }
+
+// MARK: - DropConfirmSheet
 
 struct DropConfirmSheet: View {
     @Environment(AppState.self) private var state
@@ -152,22 +137,16 @@ struct DropConfirmSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(12)
             }
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(CoveTheme.bgTertiary)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .padding(.horizontal, 16)
 
             HStack {
                 Spacer()
-                Button("Cancel") {
-                    dismiss()
-                }
-                .keyboardShortcut(.cancelAction)
-
-                Button("Execute") {
-                    state.executeTreeAction()
-                }
-                .keyboardShortcut(.defaultAction)
-                .buttonStyle(.borderedProminent)
+                Button("Cancel") { dismiss() }.keyboardShortcut(.cancelAction)
+                Button("Execute") { state.executeTreeAction() }
+                    .keyboardShortcut(.defaultAction)
+                    .buttonStyle(.borderedProminent)
             }
             .padding(16)
         }
@@ -176,18 +155,40 @@ struct DropConfirmSheet: View {
     }
 }
 
+// MARK: - VisualEffectBackground
+//
+// Uses system vibrancy by default.
+// Themes that define solidPanelBg (e.g. OLED, Midnight) bypass vibrancy
+// and paint a solid color instead — no hardcoded theme checks here.
+
 struct VisualEffectBackground: NSViewRepresentable {
     let material: NSVisualEffectView.Material
 
+    @Environment(ThemeManager.self) private var themeManager
+
     func makeNSView(context: Context) -> NSVisualEffectView {
         let view = NSVisualEffectView()
-        view.material = material
-        view.blendingMode = .withinWindow
-        view.state = .followsWindowActiveState
+        apply(to: view)
         return view
     }
 
     func updateNSView(_ nsView: NSVisualEffectView, context: Context) {
-        nsView.material = material
+        apply(to: nsView)
+    }
+
+    @MainActor
+    private func apply(to view: NSVisualEffectView) {
+        if let solid = themeManager.current.solidPanelBg {
+            view.material = .windowBackground
+            view.blendingMode = .withinWindow
+            view.state = .active
+            view.wantsLayer = true
+            view.layer?.backgroundColor = solid.cgColor
+        } else {
+            view.layer?.backgroundColor = nil
+            view.material = material
+            view.blendingMode = .withinWindow
+            view.state = .followsWindowActiveState
+        }
     }
 }

@@ -1,5 +1,6 @@
 import AppKit
 
+@MainActor
 final class CompletionPopup: NSObject, NSTableViewDataSource, NSTableViewDelegate {
 
     private let panel: NSPanel

@@ -7,6 +7,7 @@ struct SQLEditorView: NSViewRepresentable {
     var runnableRange: NSRange
     var keywords: Set<String> = []
     var completionSchema: CompletionSchema?
+    var focusEditor: Bool = false
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
@@ -72,6 +73,12 @@ struct SQLEditorView: NSViewRepresentable {
         }
         context.coordinator.updateBar(range: runnableRange)
         context.coordinator.completionSchema = completionSchema
+        // Focus the editor when requested
+        if focusEditor {
+            DispatchQueue.main.async {
+                textView.window?.makeFirstResponder(textView)
+            }
+        }
     }
 
     private func highlightText(_ textView: NSTextView) {
@@ -87,12 +94,13 @@ struct SQLEditorView: NSViewRepresentable {
         storage.endEditing()
     }
 
-    final class Coordinator: NSObject, NSTextViewDelegate {
+    @MainActor
+    final class Coordinator: NSObject, NSTextViewDelegate, @unchecked Sendable {
         let parent: SQLEditorView
         weak var textView: NSTextView?
         var barView: NSView?
         var completionSchema: CompletionSchema?
-        private let popup = CompletionPopup()
+        @MainActor private let popup = CompletionPopup()
         private var completionWork: DispatchWorkItem?
         private var wordRange = NSRange(location: 0, length: 0)
 

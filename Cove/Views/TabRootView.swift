@@ -1,9 +1,14 @@
 import SwiftUI
 import AppKit
 
+// Injects ThemeManager into the environment so all child views
+// re-render automatically when the theme changes.
 struct TabRootWrapper: View {
+    @State private var themeManager = ThemeManager.shared
+
     var body: some View {
         TabRootView()
+            .environment(themeManager)
     }
 }
 
@@ -24,17 +29,15 @@ struct TabRootView: View {
                 .clipped()
         }
         .onDisappear {
-            guard let appState else { return }
-            if !appState.shared.isTerminating {
-                appState.saveSession()
-                appState.unregister()
-                appState.shared.removeTabSession(appState.tabId)
-            }
+            guard let appState, !appState.shared.isTerminating else { return }
+            appState.saveSession()
+            appState.unregister()
+            appState.shared.removeTabSession(appState.tabId)
         }
     }
 }
 
-// MARK: - Per-window AppState initializer (bypasses @State Specter bug)
+// MARK: - Per-window AppState initializer
 
 struct PerWindowSetup: NSViewRepresentable {
     @Binding var appState: AppState?
@@ -50,7 +53,6 @@ struct PerWindowSetup: NSViewRepresentable {
         DispatchQueue.main.async {
             guard !context.coordinator.initialized else { return }
             context.coordinator.initialized = true
-
             let state = AppState()
             state.register()
             self.appState = state

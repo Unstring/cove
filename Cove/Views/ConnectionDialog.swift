@@ -3,6 +3,7 @@ import UniformTypeIdentifiers
 
 struct ConnectionDialog: View {
     @Environment(AppState.self) private var state
+    @Environment(\.coveDialogDismiss) private var dismiss
     @State private var name = ""
     @State private var backend: BackendType = .postgres
     @State private var host = "localhost"
@@ -162,6 +163,7 @@ struct ConnectionDialog: View {
                 Spacer()
                 Button("Cancel") {
                     state.dialogCancel()
+                    dismiss()
                 }
                 .keyboardShortcut(.escape, modifiers: [])
 
@@ -183,9 +185,8 @@ struct ConnectionDialog: View {
                 }
             }
         }
-        .padding(24)
-        .frame(width: 400)
-        .presentationBackground(.regularMaterial)
+        .padding(20)
+        .frame(width: 380)
         .onAppear {
             name = dialog.name
             backend = dialog.backend

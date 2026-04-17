@@ -51,9 +51,7 @@ struct RowInspectorView: View {
             }
             .frame(minWidth: 200, maxWidth: .infinity)
             .frame(maxHeight: .infinity)
-            .background {
-                VisualEffectBackground(material: .sidebar)
-            }
+            .background(CoveTheme.bgSecondary)
             .onKeyPress(.escape) {
                 if focusedField != nil {
                     focusedField = nil
@@ -74,9 +72,7 @@ struct RowInspectorView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background {
-                    VisualEffectBackground(material: .sidebar)
-                }
+                .background(CoveTheme.bgSecondary)
         }
     }
 

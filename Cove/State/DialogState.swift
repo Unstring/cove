@@ -1,6 +1,7 @@
 import Foundation
 
 @Observable
+@MainActor
 final class DialogState {
     var name = ""
     var backend: BackendType = .postgres

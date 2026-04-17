@@ -56,9 +56,12 @@ struct DataTableView: View {
                 paginationFooter
             }
         }
-        .sheet(isPresented: Bindable(state).showSQLPreview) {
-            SQLPreviewSheet()
-                .environment(state)
+        .onChange(of: state.showSQLPreview) { _, show in
+            if show {
+                CoveDialogHost.present(key: "sql-preview", onDismiss: { state.showSQLPreview = false }) {
+                    SQLPreviewSheet().environment(state)
+                }
+            }
         }
     }
 
@@ -93,10 +96,21 @@ struct DataTableView: View {
             case "r": state.refresh(); return .handled
             case "s":
                 guard table.hasPendingEdits else { return .ignored }
-                state.showSQLPreview = true
+                CoveDialogHost.present(key: "sql-preview", onDismiss: { state.showSQLPreview = false }) {
+                    SQLPreviewSheet().environment(state)
+                }
                 return .handled
             default: break
             }
+        }
+
+        // Cmd+Shift+E — execute changes directly without preview
+        if mods == [.command, .shift] && keyPress.characters.lowercased() == "e" && !isQueryResult {
+            guard table.hasPendingEdits else { return .ignored }
+            // Close the preview dialog if open, then commit
+            CoveDialogHost.dismiss(key: "sql-preview")
+            state.commitEdits()
+            return .handled
         }
 
         return .ignored
@@ -105,13 +119,29 @@ struct DataTableView: View {
     @ViewBuilder
     private var reviewChangesButton: some View {
         if !isQueryResult && table.hasPendingEdits {
-            Button {
-                state.showSQLPreview = true
-            } label: {
-                Label("Review Changes", systemImage: "eye")
-                    .font(.system(size: 12, weight: .medium))
+            HStack(spacing: 8) {
+                // Execute directly — Cmd+Shift+E
+                Button {
+                    state.commitEdits()
+                } label: {
+                    Label("Execute", systemImage: "bolt.fill")
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .buttonStyle(.bordered)
+                .keyboardShortcut(AppShortcuts.executeChanges)
+
+                // Preview first — Cmd+S
+                Button {
+                    CoveDialogHost.present(key: "sql-preview", onDismiss: { state.showSQLPreview = false }) {
+                        SQLPreviewSheet().environment(state)
+                    }
+                } label: {
+                    Label("Review Changes", systemImage: "eye")
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .buttonStyle(.borderedProminent)
+                .keyboardShortcut(AppShortcuts.previewChanges)
             }
-            .buttonStyle(.borderedProminent)
             .padding(16)
         }
     }
@@ -180,7 +210,10 @@ struct DataTableView: View {
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .frame(height: 34)
-        .background(.ultraThinMaterial)
+        .background(CoveTheme.bgAlt)
+        .overlay(alignment: .top) {
+            CoveTheme.border.frame(height: 1)
+        }
     }
 }
 

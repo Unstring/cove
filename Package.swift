@@ -14,6 +14,7 @@ let package = Package(
         .package(url: "https://github.com/lovetodream/oracle-nio.git", from: "1.0.0-rc.1"),
         .package(url: "https://github.com/vkuttyp/CosmoSQLClient-Swift.git", branch: "main"),
         .package(url: "https://github.com/patrick-zippenfenig/ClickHouseNIO.git", from: "1.0.0"),
+        .package(url: "https://github.com/swift-server/RediStack.git", from: "1.4.0"),
     ],
     targets: [
         .executableTarget(
@@ -27,6 +28,7 @@ let package = Package(
                 .product(name: "OracleNIO", package: "oracle-nio"),
                 .product(name: "CosmoMSSQL", package: "CosmoSQLClient-Swift"),
                 .product(name: "ClickHouseNIO", package: "ClickHouseNIO"),
+                .product(name: "RediStack", package: "RediStack"),
                 "CDuckDB",
             ],
             path: "Cove",
@@ -35,11 +37,14 @@ let package = Package(
             ],
             linkerSettings: [
                 .unsafeFlags(["-L/opt/homebrew/lib"]),
+                .linkedLibrary("duckdb"),
             ]
         ),
         .systemLibrary(
             name: "CDuckDB",
-            path: "Sources/CDuckDB"
+            path: "Sources/CDuckDB",
+            pkgConfig: nil,
+            providers: [.brew(["duckdb"])]
         ),
     ]
 )

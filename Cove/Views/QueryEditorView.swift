@@ -7,7 +7,22 @@ struct QueryEditorView: View {
         @Bindable var query = state.query
 
         ZStack(alignment: .bottomTrailing) {
-            SQLEditorView(text: $query.text, selectedRange: $query.selectedRange, runnableRange: state.query.runnableRange, keywords: state.connection?.syntaxKeywords ?? [], completionSchema: state.completionSchema)
+            SQLEditorView(
+                text: $query.text,
+                selectedRange: $query.selectedRange,
+                runnableRange: state.query.runnableRange,
+                keywords: state.connection?.syntaxKeywords ?? [],
+                completionSchema: state.completionSchema,
+                focusEditor: state.focusQueryEditor
+            )
+            .onChange(of: state.focusQueryEditor) { _, focused in
+                if focused {
+                    // Reset after focus is granted so it doesn't re-trigger
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                        state.focusQueryEditor = false
+                    }
+                }
+            }
 
             HStack(spacing: 8) {
                 if !state.query.error.isEmpty {

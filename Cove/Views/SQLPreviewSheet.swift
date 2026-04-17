@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SQLPreviewSheet: View {
     @Environment(AppState.self) private var state
-    @Environment(\.dismiss) private var dismiss
+    @Environment(\.coveDialogDismiss) private var dismiss
 
     var body: some View {
         let sql = state.generateSQLPreview()
@@ -10,6 +10,7 @@ struct SQLPreviewSheet: View {
         VStack(alignment: .leading, spacing: 0) {
             Text("Review Changes")
                 .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(CoveTheme.fgPrimary)
                 .padding(.horizontal, 16)
                 .padding(.top, 16)
                 .padding(.bottom, 8)
@@ -17,12 +18,12 @@ struct SQLPreviewSheet: View {
             ScrollView {
                 Text(sql)
                     .font(.system(size: 12, design: .monospaced))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(CoveTheme.fgPrimary)
                     .textSelection(.enabled)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(12)
             }
-            .background(Color(nsColor: .controlBackgroundColor))
+            .background(CoveTheme.bgTertiary)
             .clipShape(RoundedRectangle(cornerRadius: 6))
             .padding(.horizontal, 16)
 
@@ -43,6 +44,9 @@ struct SQLPreviewSheet: View {
             .padding(16)
         }
         .frame(width: 520, height: 360)
-        .background()
+        // Auto-close when there's nothing left to preview
+        .onChange(of: state.table?.hasPendingEdits) { _, hasPending in
+            if hasPending == false { dismiss() }
+        }
     }
 }

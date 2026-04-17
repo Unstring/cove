@@ -1,4 +1,5 @@
 module CDuckDB [system] {
     header "include/duckdb.h"
+    link "duckdb"
     export *
 }
