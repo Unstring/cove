@@ -28,7 +28,7 @@ final class ThemeManager {
 
     func openThemePicker() {
         let original = current
-        CoveDialogHost.present(key: "theme-picker", onDismiss: nil) {
+        CoveDialogHost.present(key: "theme-picker", title: "Theme", onDismiss: nil) {
             ThemePickerView(originalTheme: original)
         }
     }

@@ -691,6 +691,7 @@ final class AppState {
 
     func tableRowClicked(row: Int) {
         table?.selectedRow = row
+        focusedColumn = nil
     }
 
     func tableCellDoubleClicked(row: Int, col: Int) {
@@ -701,11 +702,23 @@ final class AppState {
         showInspector = true
     }
 
+    func tableInlineEdit(row: Int, col: Int, value: String) {
+        guard let table else { return }
+        let newValue = value.isEmpty ? nil : value
+        // Skip no-op edits — don't create a pending edit if value hasn't changed
+        let original = row < table.rows.count && col < table.columns.count ? table.rows[row][col] : nil
+        guard newValue != original else { return }
+        table.pendingEdits.removeAll { $0.row == row && $0.col == col }
+        table.pendingEdits.append(PendingEdit(row: row, col: col, newValue: newValue))
+        table.bumpDataGeneration()
+    }
+
     func inspectorFieldConfirmed(col: Int, value: String) {
         guard let table else { return }
         guard let row = table.selectedRow else { return }
         let newValue = value.isEmpty ? nil : value
         table.pendingEdits.append(PendingEdit(row: row, col: col, newValue: newValue))
+        table.bumpDataGeneration()
     }
 
     func addRow() {
@@ -713,7 +726,6 @@ final class AppState {
         let rowIdx = table.addNewRow()
         table.selectedRow = rowIdx
         focusedColumn = 0
-        showInspector = true
     }
 
     func deleteSelectedRow() {
@@ -731,6 +743,7 @@ final class AppState {
             table.pendingNewRows = Set(table.pendingNewRows.map { $0 > row ? $0 - 1 : $0 })
             table.pendingDeletes = Set(table.pendingDeletes.map { $0 > row ? $0 - 1 : $0 })
             table.selectedRow = nil
+            table.bumpDataGeneration()
         } else {
             guard isEditableTable || isEditableStructure else { return }
             table.toggleDelete(row)
@@ -1009,24 +1022,6 @@ final class AppState {
     }
 
     // MARK: - Keyboard Navigation
-
-    func tableEscape() {
-        if focusedColumn != nil {
-            focusedColumn = nil
-        } else if showInspector {
-            showInspector = false
-        } else if table?.selectedColumn != nil {
-            table?.selectedColumn = nil
-        } else {
-            table?.selectedRow = nil
-        }
-    }
-
-    func tableEnter() {
-        guard table?.selectedRow != nil else { return }
-        focusedColumn = table?.selectedColumn ?? 0
-        showInspector = true
-    }
 
     func tableCopyCell() {
         guard let table else { return }

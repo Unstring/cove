@@ -15,6 +15,7 @@ enum CoveDialogHost {
 
     static func present<Content: View>(
         key: String = UUID().uuidString,
+        title: String = "",
         onDismiss: (@Sendable () -> Void)? = nil,
         @ViewBuilder content: () -> Content
     ) {
@@ -53,20 +54,25 @@ enum CoveDialogHost {
 
         let panel = NSPanel(
             contentRect: .zero,
-            styleMask: [.borderless, .nonactivatingPanel],
+            styleMask: [.titled, .closable, .fullSizeContentView],
             backing: .buffered,
             defer: true
         )
+        panel.title = title
+        panel.titleVisibility = title.isEmpty ? .hidden : .visible
+        panel.titlebarAppearsTransparent = true
         panel.isOpaque = false
         panel.backgroundColor = .clear
         panel.hasShadow = true
         panel.isReleasedWhenClosed = false
         panel.isMovableByWindowBackground = true
         panel.level = .floating
+        panel.standardWindowButton(.miniaturizeButton)?.isHidden = true
+        panel.standardWindowButton(.zoomButton)?.isHidden = true
+        panel.becomesKeyOnlyIfNeeded = false
         panel.contentViewController = hosting
         panel.layoutIfNeeded()
 
-        // Clip the panel's own contentView to match the rounded corners
         if let cv = panel.contentView {
             cv.wantsLayer = true
             cv.layer?.cornerRadius = 12
@@ -75,6 +81,11 @@ enum CoveDialogHost {
         }
 
         panels[key] = panel
+
+        // Wire close button to our dismiss handler
+        let panelDelegate = PanelDismissDelegate(dismiss: dismiss)
+        panel.delegate = panelDelegate
+        objc_setAssociatedObject(panel, &AssociatedKeys.delegateKey, panelDelegate, .OBJC_ASSOCIATION_RETAIN)
 
         let parent = NSApp.windows.first { $0.isVisible && !($0 is NSPanel) }
         if let parent {
@@ -90,6 +101,17 @@ enum CoveDialogHost {
 
         panel.makeKeyAndOrderFront(nil)
     }
+
+    private struct AssociatedKeys {
+        nonisolated(unsafe) static var delegateKey = 0
+    }
+}
+
+// Delegate to call dismiss when close button is clicked
+private final class PanelDismissDelegate: NSObject, NSWindowDelegate {
+    let dismiss: @Sendable () -> Void
+    init(dismiss: @escaping @Sendable () -> Void) { self.dismiss = dismiss }
+    func windowWillClose(_ notification: Notification) { dismiss() }
 }
 
 // MARK: - CoveDialogSurface

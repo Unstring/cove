@@ -37,7 +37,7 @@ struct CoveApp: App {
                     if let tab = focusedTab {
                         tab.dialog.reset()
                         tab.dialog.environment = tab.selectedEnvironment
-                        CoveDialogHost.present(key: "connection-dialog", onDismiss: { tab.dialogCancel() }) {
+                        CoveDialogHost.present(key: "connection-dialog", title: "New Connection", onDismiss: { @Sendable in Task { @MainActor in tab.dialogCancel() } }) {
                             ConnectionDialog().environment(tab)
                         }
                     }

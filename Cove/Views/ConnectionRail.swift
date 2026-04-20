@@ -24,7 +24,7 @@ struct ConnectionRail: View {
         Button {
             state.dialog.reset()
             state.dialog.environment = state.selectedEnvironment
-            CoveDialogHost.present(key: "connection-dialog", onDismiss: { state.dialogCancel() }) {
+            CoveDialogHost.present(key: "connection-dialog", title: "New Connection", onDismiss: { @Sendable in Task { @MainActor in state.dialogCancel() } }) {
                 ConnectionDialog().environment(state)
             }
         } label: {
@@ -79,7 +79,7 @@ private struct ConnectionButton: View {
             }
             Button("Edit") {
                 state.openEditDialog(for: conn)
-                CoveDialogHost.present(key: "connection-dialog", onDismiss: { state.dialogCancel() }) {
+                CoveDialogHost.present(key: "connection-dialog", title: "Edit Connection", onDismiss: { @Sendable in Task { @MainActor in state.dialogCancel() } }) {
                     ConnectionDialog().environment(state)
                 }
             }

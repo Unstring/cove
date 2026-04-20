@@ -23,6 +23,13 @@ final class TableState {
     var pendingDeletes: Set<Int> = []
     private(set) var cachedColWidths: [CGFloat]
 
+    /// Monotonically increasing counter — bumped whenever rows/columns/edits change.
+    /// The NSTableView coordinator uses this to skip `reloadData()` when only
+    /// selection or focus changed (which don't require a data rebuild).
+    private(set) var dataGeneration: UInt = 0
+
+    func bumpDataGeneration() { dataGeneration &+= 1 }
+
     init(tablePath: [String], result: QueryResult) {
         self.columns = result.columns
         self.rows = result.rows
@@ -38,6 +45,7 @@ final class TableState {
         selectedRow = nil
         selectedColumn = nil
         cachedColWidths = Self.computeWidths(columns: result.columns, rows: result.rows)
+        dataGeneration &+= 1
     }
 
     func discardEdits() {
@@ -50,74 +58,13 @@ final class TableState {
         selectedRow = nil
         selectedColumn = nil
         cachedColWidths = Self.computeWidths(columns: columns, rows: rows)
+        dataGeneration &+= 1
     }
 
     var selectedCellValue: String? {
         guard let row = selectedRow, let col = selectedColumn,
               row < rows.count, col < columns.count else { return nil }
         return effectiveValue(row: row, col: col)
-    }
-
-    func selectUp() {
-        guard !rows.isEmpty else { return }
-        if let row = selectedRow {
-            selectedRow = max(row - 1, 0)
-        } else {
-            selectedRow = 0
-        }
-    }
-
-    func selectDown() {
-        guard !rows.isEmpty else { return }
-        if let row = selectedRow {
-            selectedRow = min(row + 1, rows.count - 1)
-        } else {
-            selectedRow = 0
-        }
-    }
-
-    func selectLeft() {
-        guard !columns.isEmpty else { return }
-        if let col = selectedColumn {
-            selectedColumn = max(col - 1, 0)
-        } else {
-            selectedColumn = 0
-        }
-    }
-
-    func selectRight() {
-        guard !columns.isEmpty else { return }
-        if let col = selectedColumn {
-            selectedColumn = min(col + 1, columns.count - 1)
-        } else {
-            selectedColumn = 0
-        }
-    }
-
-    func tabForward() {
-        guard !columns.isEmpty, !rows.isEmpty else { return }
-        let col = selectedColumn ?? 0
-        let row = selectedRow ?? 0
-        if col < columns.count - 1 {
-            selectedColumn = col + 1
-            selectedRow = row
-        } else if row < rows.count - 1 {
-            selectedColumn = 0
-            selectedRow = row + 1
-        }
-    }
-
-    func tabBackward() {
-        guard !columns.isEmpty, !rows.isEmpty else { return }
-        let col = selectedColumn ?? 0
-        let row = selectedRow ?? 0
-        if col > 0 {
-            selectedColumn = col - 1
-            selectedRow = row
-        } else if row > 0 {
-            selectedColumn = columns.count - 1
-            selectedRow = row - 1
-        }
     }
 
     var hasPendingEdits: Bool {
@@ -152,6 +99,7 @@ final class TableState {
         rows.append(newRow)
         let idx = rows.count - 1
         pendingNewRows.insert(idx)
+        dataGeneration &+= 1
         return idx
     }
 
@@ -161,6 +109,7 @@ final class TableState {
         } else {
             pendingDeletes.insert(row)
         }
+        dataGeneration &+= 1
     }
 
     private static func computeWidths(columns: [ColumnInfo], rows: [[String?]]) -> [CGFloat] {

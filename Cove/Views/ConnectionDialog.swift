@@ -29,15 +29,11 @@ struct ConnectionDialog: View {
         let capabilities = backend.capabilities
 
         VStack(spacing: 12) {
-            Text(dialog.isEditing ? "Edit Connection" : "New Connection")
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.primary)
-                .frame(maxWidth: .infinity, alignment: .leading)
 
             formField("Name") {
                 HStack(spacing: 8) {
                     TextField("Name", text: $name)
-                        .textFieldStyle(.roundedBorder)
+                        .coveInput()
                     ColorPicker("", selection: $selectedColor, supportsOpacity: false)
                         .labelsHidden()
                         .fixedSize()
@@ -91,7 +87,7 @@ struct ConnectionDialog: View {
                 formField("Database File") {
                     HStack(spacing: 8) {
                         TextField("Path to database file", text: $database)
-                            .textFieldStyle(.roundedBorder)
+                            .coveInput()
                         if !sshEnabled {
                             Button("Browse...") {
                                 browseForDatabaseFile()
@@ -105,11 +101,11 @@ struct ConnectionDialog: View {
                 HStack(spacing: 8) {
                     formField("Host") {
                         TextField("Host", text: $host)
-                            .textFieldStyle(.roundedBorder)
+                            .coveInput()
                     }
                     formField("Port") {
                         TextField("Port", text: $port)
-                            .textFieldStyle(.roundedBorder)
+                            .coveInput()
                     }
                     .frame(width: 80)
                 }
@@ -118,19 +114,19 @@ struct ConnectionDialog: View {
             if capabilities.usesCredentials {
                 formField("User") {
                     TextField("User", text: $user)
-                        .textFieldStyle(.roundedBorder)
+                        .coveInput()
                 }
 
                 formField("Password") {
                     SecureField("Password", text: $password)
-                        .textFieldStyle(.roundedBorder)
+                        .coveInput()
                 }
             }
 
             if capabilities.usesDatabaseName {
                 formField("Database") {
                     TextField("Database", text: $database)
-                        .textFieldStyle(.roundedBorder)
+                        .coveInput()
                 }
             }
 
@@ -237,18 +233,18 @@ struct ConnectionDialog: View {
             HStack(spacing: 8) {
                 formField("SSH Host") {
                     TextField("SSH Host", text: $sshHost)
-                        .textFieldStyle(.roundedBorder)
+                        .coveInput()
                 }
                 formField("SSH Port") {
                     TextField("Port", text: $sshPort)
-                        .textFieldStyle(.roundedBorder)
+                        .coveInput()
                 }
                 .frame(width: 80)
             }
 
             formField("SSH User") {
                 TextField("SSH User", text: $sshUser)
-                    .textFieldStyle(.roundedBorder)
+                    .coveInput()
             }
 
             formField("Auth Method") {
@@ -268,13 +264,13 @@ struct ConnectionDialog: View {
             if sshAuthMethod == .password {
                 formField("SSH Password") {
                     SecureField("SSH Password", text: $sshPassword)
-                        .textFieldStyle(.roundedBorder)
+                        .coveInput()
                 }
             } else {
                 formField("Private Key") {
                     HStack(spacing: 8) {
                         TextField("~/.ssh/id_ed25519", text: $sshPrivateKeyPath)
-                            .textFieldStyle(.roundedBorder)
+                            .coveInput()
                         Button("Browse...") {
                             browseForKeyFile()
                         }
@@ -283,7 +279,7 @@ struct ConnectionDialog: View {
 
                 formField("Passphrase") {
                     SecureField("Passphrase (if any)", text: $sshPassphrase)
-                        .textFieldStyle(.roundedBorder)
+                        .coveInput()
                 }
             }
         }
@@ -377,8 +373,32 @@ struct ConnectionDialog: View {
         VStack(alignment: .leading, spacing: 4) {
             Text(label)
                 .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(CoveTheme.fgSecondary)
             content()
         }
+    }
+}
+
+@MainActor
+private struct CoveInput: ViewModifier {
+    func body(content: Content) -> some View {
+        content
+            .textFieldStyle(.plain)
+            .padding(.horizontal, 8)
+            .padding(.vertical, 6)
+            .background(CoveTheme.bgTertiary)
+            .foregroundStyle(CoveTheme.fgPrimary)
+            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                    .strokeBorder(CoveTheme.border, lineWidth: 1)
+            )
+    }
+}
+
+extension View {
+    @MainActor
+    fileprivate func coveInput() -> some View {
+        modifier(CoveInput())
     }
 }

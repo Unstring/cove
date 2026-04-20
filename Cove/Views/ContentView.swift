@@ -91,7 +91,7 @@ struct ContentView: View {
                 Button { 
                     state.dialog.reset()
                     state.dialog.environment = state.selectedEnvironment
-                    CoveDialogHost.present(key: "connection-dialog", onDismiss: { state.dialogCancel() }) {
+                    CoveDialogHost.present(key: "connection-dialog", title: "New Connection", onDismiss: { @Sendable in Task { @MainActor in state.dialogCancel() } }) {
                         ConnectionDialog().environment(state)
                     }
                 } label: {
